@@ -2,7 +2,8 @@
 .nav a { white-space: nowrap; }
 @media (max-width: 420px) {
   .topbar-in { gap: 8px; }
-  .brand { font-size: 1.15rem; gap: 6px; }
+  .brand { gap: 5px; }
+  .brand-name { font-size: 1.3rem; }
   .brand-mark { width: 32px; height: 32px; }
   .actions { gap: 6px; }
   .pill-btn[data-open-badges] { padding: 6px 8px; }
@@ -307,7 +308,9 @@ a.ll:hover { background: var(--cream); }
 .cert-card { margin-top: 20px; }
 .certificate { margin: 16px 0; padding: 10px; border-radius: 18px; background: linear-gradient(135deg, var(--leaf), var(--forest)); }
 .cert-in { text-align: center; padding: 30px 20px; border-radius: 12px; background: var(--paper); border: 2px dashed var(--sprout); }
-.cert-in .brand-mark { margin: 0 auto 6px; }
+.cert-logo { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 6px; color: #1d2a21; }
+.cert-logo img { width: 40px; height: 40px; }
+.cert-logo .brand-name { font-size: 1.7rem; }
 .cert-in h2 { font-size: 1.7rem; margin: 6px 0 14px; }
 .cert-name { font-family: 'Fredoka', var(--font-head); font-size: 1.9rem; font-weight: 600; color: var(--ocean); border-bottom: 2px solid var(--line); display: inline-block; padding: 0 20px 4px; }
 

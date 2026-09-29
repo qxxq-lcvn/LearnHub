@@ -5,7 +5,7 @@
   var LH = window.LH;
   var icon = LH.icon;
   var STORE_KEY = 'learnhub.v2';
-  var ASSET_V = '?v=3'; // bump with the ?v= tags in index.html so browsers fetch fresh files
+  var ASSET_V = '?v=4'; // bump with the ?v= tags in index.html so browsers fetch fresh files
 
   function $(sel, root) { return (root || document).querySelector(sel); }
   function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
@@ -258,7 +258,7 @@
     $('#skip').textContent = t('ui.skip');
     $('#topbar').innerHTML =
       '<div class="wrap topbar-in">' +
-        '<a class="brand" href="#/"><span class="brand-mark">' + icon('leaf') + '</span><span class="brand-name">LearnHub</span></a>' +
+        '<a class="brand" href="#/"><img class="brand-mark" src="assets/logo/svg/mark.svg" alt="" width="40" height="40"><span class="brand-name">LearnHub</span></a>' +
         '<nav class="nav" aria-label="Main">' + NAV.map(function (n) {
           return '<a href="' + n.href + '" data-nav="' + n.id + '">' + icon(n.icon) + '<span>' + T('ui.nav.' + n.id) + '</span></a>';
         }).join('') + '</nav>' +
@@ -279,7 +279,7 @@
     var tr = t('ui.footer.translation');
     $('#footer').innerHTML =
       '<div class="wrap footer-in">' +
-        '<p>' + icon('leaf') + ' <strong>LearnHub</strong> · ' + T('ui.footer.note') + '</p>' +
+        '<p><img class="footer-mark" src="assets/logo/svg/mark.svg" alt="" width="20" height="20"> <strong>LearnHub</strong> · ' + T('ui.footer.note') + '</p>' +
         (lang !== 'en' && tr ? '<p class="muted small">' + esc(tr) + '</p>' : '') +
       '</div>';
 
@@ -1420,7 +1420,7 @@
     return '<div class="card cert-card"><h2 class="block-title">' + icon('star') + ' ' + T('ui.exam.certTitle') + '</h2>' +
       '<label class="plan-field"><span>' + T('ui.exam.certName') + '</span><input type="text" id="cert-name" maxlength="60" value="' + esc(S.certName) + '"></label>' +
       '<div class="certificate" id="certificate">' +
-        '<div class="cert-in"><span class="brand-mark">' + icon('leaf') + '</span>' +
+        '<div class="cert-in"><div class="cert-logo"><img src="assets/logo/svg/mark.svg" alt="" width="40" height="40"><span class="brand-name">LearnHub</span></div>' +
         '<small>LearnHub</small><h2>' + T('ui.exam.certHeading') + '</h2>' +
         '<p>' + T('ui.exam.certPresented') + '</p><p class="cert-name" id="cert-name-out">' + esc(S.certName || '—') + '</p>' +
         '<p>' + T('ui.exam.certBody', { course: t('topics.' + tid + '.title') }) + '</p><p class="muted small">' + esc(es.date) + '</p></div></div>' +

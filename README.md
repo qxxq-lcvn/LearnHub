@@ -57,7 +57,8 @@ links to the labs, and links to official sources.
 ```
 index.html                 App shell
 assets/
-  favicon.svg
+  logo/svg/                Logo, mark and favicon (light variants for dark backgrounds)
+  logo/png/                App icons 16–512 px (favicon, apple-touch-icon)
   css/style.css            Nature theme and core layout
   css/course.css           Course blocks, exam, certificate, plan, print styles
   js/icons.js              Hand-drawn nature SVG icon set
