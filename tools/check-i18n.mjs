@@ -21,6 +21,7 @@ const langs = process.argv[2] ? [process.argv[2]] : ctx.LH.LANGS.map((l) => l.co
 for (const code of ['en', ...langs]) {
   load(`assets/js/i18n/${code}.js`);
   load(`assets/js/content/${code}.js`);
+  load(`assets/js/content/cancer-${code}.js`);
 }
 
 function leaves(obj, prefix = '', out = []) {

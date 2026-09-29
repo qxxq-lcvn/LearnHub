@@ -1,5 +1,14 @@
 /* LearnHub — course: modules, lessons, activity blocks, exam, certificate, DRR plan */
 .nav a { white-space: nowrap; }
+@media (max-width: 420px) {
+  .topbar-in { gap: 8px; }
+  .brand { font-size: 1.15rem; gap: 6px; }
+  .brand-mark { width: 32px; height: 32px; }
+  .actions { gap: 6px; }
+  .pill-btn[data-open-badges] { padding: 6px 8px; }
+  .lang-select { padding-left: 8px; }
+  .lang-select select { padding: 6px 6px 6px 0; max-width: 84px; }
+}
 @media (min-width: 761px) and (max-width: 1100px) {
   .nav { margin-left: 4px; }
   .nav a { padding: 8px 11px; }
@@ -215,6 +224,75 @@ a.ll:hover { background: var(--cream); }
   .gb-items { grid-template-columns: repeat(3, 1fr); }
   .gb-item { min-height: 96px; }
   .gb-emoji { font-size: 1.7rem; }
+}
+
+/* Home: categories and topic cards */
+.cat-section { margin-top: 40px; padding-top: 8px; scroll-margin-top: 80px; }
+.cat-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.cat-head h2 { margin: 0; font-size: 1.6rem; }
+.cat-head p { margin: 2px 0 0; }
+.cat-badge { width: 56px; height: 56px; border-radius: 18px; display: grid; place-items: center; flex: none; color: #fff; }
+.cat-badge .ic { width: 30px; height: 30px; }
+.cat-emergency .cat-badge { background: linear-gradient(135deg, var(--sea), var(--ocean)); }
+.cat-health .cat-badge { background: linear-gradient(135deg, #e07a98, #b04a6a); }
+.topic-feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.topic-feature { border-top: 6px solid var(--accent); display: flex; flex-direction: column; gap: 12px; }
+.tf-head { display: flex; align-items: flex-start; gap: 14px; text-decoration: none; color: inherit; }
+.tf-head > div { flex: 1; }
+.tf-head h3 { margin: 2px 0 4px; font-size: 1.35rem; }
+.tf-head p { margin: 0; color: var(--muted); font-size: .95rem; }
+.tf-meta { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: .88rem; font-weight: 700; color: var(--muted); }
+.tf-meta span { display: inline-flex; align-items: center; gap: 6px; }
+.tf-meta .ok { color: var(--moss); }
+.topic-feature .btn-row { margin-top: auto; }
+.soon-title { margin: 22px 0 10px; font-size: 1rem; color: var(--muted); }
+.btn-sea:hover { background: #256f8d; }
+.feature-rose { background: linear-gradient(135deg, #e07a98, #b04a6a); }
+.feature small { opacity: .85; font-weight: 700; }
+.tryit-rose { color: #8d2f4e; background: #fbeef0; border-color: #f2c6d2; }
+.tryit-rose p { color: #9c5a6f; }
+
+/* Cancer lab */
+.lab-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px; align-items: start; }
+.lab-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.lab-stats div { padding: 10px; border-radius: 14px; background: var(--cream); border: 1px solid var(--line); }
+.lab-stats small { display: block; color: var(--muted); font-weight: 700; font-size: .78rem; }
+.lab-stats strong { font-family: var(--font-head); font-weight: 600; font-size: 1.05rem; color: var(--forest-d); }
+.lab-stats strong.bad { color: var(--clay); }
+.lab-health { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; margin: 12px 0; font-weight: 700; }
+.lab-health small { color: var(--muted); }
+.lab-health .bar span { background: linear-gradient(90deg, var(--leaf), var(--moss)); }
+.lab-health .bar span.low { background: var(--clay); }
+.lab-field svg { display: block; width: 100%; height: auto; border-radius: 14px; }
+.lab-legend { list-style: none; padding: 0; margin: 10px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-size: .85rem; font-weight: 600; }
+.lab-legend li { display: flex; align-items: center; gap: 6px; }
+.lab-legend span { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.lab-legend em { margin-left: auto; font-style: normal; color: var(--muted); font-variant-numeric: tabular-nums; }
+.lab-actions { display: grid; gap: 8px; }
+.lab-act { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; border: 2px solid var(--line); background: var(--cream); cursor: pointer; text-align: left; }
+.lab-act:hover:not(:disabled) { border-color: #b04a6a; background: #fff; }
+.lab-act:disabled { opacity: .45; cursor: not-allowed; }
+.lab-act > .ic { width: 26px; height: 26px; color: #b04a6a; flex: none; }
+.lab-act span { flex: 1; }
+.lab-act strong { display: block; font-family: var(--font-head); font-weight: 600; color: var(--forest-d); }
+.lab-act small { display: block; color: var(--muted); font-size: .82rem; line-height: 1.35; }
+.lab-act .harm { font-style: normal; font-weight: 800; font-size: .8rem; color: var(--clay); background: #fbe9e1; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.lab-log { margin-top: 12px; max-height: 220px; overflow: auto; font-size: .88rem; border-top: 1px solid var(--line); padding-top: 8px; }
+.lab-log p { margin: 0 0 6px; }
+.lab-log p.bad { color: #9a3413; }
+.lab-chart svg { display: block; width: 100%; height: auto; }
+.lab-result { text-align: center; margin: 16px 0; }
+.lab-win { background: var(--mint); }
+.lab-spread { background: #fbe9e1; }
+.lab-time { background: #fdf6e0; }
+.lab-tips { margin-top: 16px; }
+@media (max-width: 860px) {
+  .lab-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) {
+  .lab-stats { grid-template-columns: 1fr 1fr; }
+  .lab-legend { grid-template-columns: 1fr; }
+  .topic-feature-grid { grid-template-columns: 1fr; }
 }
 
 /* Exam & certificate */

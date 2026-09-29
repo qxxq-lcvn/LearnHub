@@ -63,7 +63,12 @@ LH.ICONS = {
   quote: '<path d="M9 7H5v6h4v-2a4 4 0 0 1-4 4M19 7h-4v6h4v-2a4 4 0 0 1-4 4"/>',
   calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
   layers: '<path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/>',
-  shuffle: '<path d="M3 7h4l10 10h4M3 17h4l3-3M14 10l3-3h4"/><path d="m18 4 3 3-3 3M18 14l3 3-3 3"/>'
+  cell: '<circle cx="12" cy="12" r="9"/><circle cx="13" cy="11" r="3.2"/><circle cx="7.5" cy="15.5" r="1"/><circle cx="16.5" cy="17" r=".8"/>',
+  dna: '<path d="M7 3c0 6 10 6 10 12s-10 6-10 6M17 3c0 6-10 6-10 12s10 6 10 6"/><path d="M8.5 7h7M8.5 17h7M10 12h4"/>',
+  syringe: '<path d="m18 2 4 4M19.5 3.5 15 8M14 5l5 5M16.5 7.5 7 17l-3 1 1-3 9.5-9.5"/><path d="M9.5 10.5l2 2M7.5 12.5l2 2M4 20l-2 2"/>',
+  microscope: '<path d="M6 21h12M9 17h6"/><path d="M12 17a5 5 0 0 0 5-5"/><path d="M8 3l4 1-2.5 8-4-1.2z"/><path d="M9.5 12 11 17"/>',
+  drop: '<path d="M12 3s7 7.5 7 12a7 7 0 0 1-14 0c0-4.5 7-12 7-12z"/><path d="M9 15a3 3 0 0 0 3 3"/>',
+  shuffle:'<path d="M3 7h4l10 10h4M3 17h4l3-3M14 10l3-3h4"/><path d="m18 4 3 3-3 3M18 14l3 3-3 3"/>'
 };
 
 LH.icon = function (name, cls) {

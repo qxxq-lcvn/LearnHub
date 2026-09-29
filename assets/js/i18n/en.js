@@ -15,12 +15,15 @@ LH.i18n.en = {
       "forum": "Forum",
       "badges": "Badges",
       "course": "Course",
-      "plan": "My Plan"
+      "plan": "My Plan",
+      "emergency": "Emergency",
+      "health": "Health",
+      "labs": "Labs"
     },
     "language": "Language",
     "home": {
-      "hello": "Grow your disaster-ready roots",
-      "intro": "A free course in four modules: understand disaster risk, learn from Japan and the Asia-Pacific, and prepare your family and community. Grow from a seed into a forest of knowledge.",
+      "hello": "Grow the knowledge that keeps you safe",
+      "intro": "Free courses with interactive labs, quizzes and exams. Prepare for disasters, understand your health, and grow from a seed into a forest of knowledge.",
       "start": "Start learning",
       "continue": "Continue learning",
       "review": "Review the course",
@@ -47,7 +50,9 @@ LH.i18n.en = {
       "courseTitle": "Your learning path",
       "hazardsTitle": "Hazard library",
       "hazardsIntro": "The course focuses on tsunamis. More hazard topics are coming.",
-      "inCourse": "In the course"
+      "inCourse": "In the course",
+      "modulesN": "{n} modules",
+      "openLab": "Lab"
     },
     "levels": {
       "seed": "Seed",
@@ -233,7 +238,7 @@ LH.i18n.en = {
     },
     "exam": {
       "title": "Final exam",
-      "desc": "20 questions from all four modules. Score 70% to earn your certificate.",
+      "desc": "20 questions from every module of this topic. Score 70% to earn your certificate.",
       "lockedMsg": "Finish all lessons to unlock the exam. {n} lessons to go.",
       "rules": "Answer all {n} questions, then submit. You need {pct}% to pass. You can take the exam again as many times as you like.",
       "best": "Your best score: {score}/{total}",
@@ -241,7 +246,7 @@ LH.i18n.en = {
       "submit": "Submit answers",
       "passTitle": "You passed!",
       "failTitle": "Almost there",
-      "passBody": "Congratulations! You are now a certified Disaster Risk Reduction Guardian.",
+      "passBody": "Congratulations! You passed the “{course}” exam.",
       "failBody": "Review the lessons and try again. Every attempt helps knowledge take root.",
       "retry": "Take a new exam",
       "passedShort": "Passed",
@@ -249,7 +254,7 @@ LH.i18n.en = {
       "certName": "Name on the certificate",
       "certHeading": "Certificate of Completion",
       "certPresented": "This certifies that",
-      "certBody": "has completed the LearnHub Disaster Risk Reduction course and passed the final exam.",
+      "certBody": "has completed the LearnHub course “{course}” and passed the final exam.",
       "certPrint": "Print certificate"
     },
     "plan": {
@@ -328,6 +333,129 @@ LH.i18n.en = {
         "leader": "Village or community leader",
         "social": "Official social media"
       }
+    },
+    "categories": {
+      "emergency": {
+        "title": "Emergency preparedness",
+        "desc": "Natural hazards and disasters: understand the risks and learn how to stay safe."
+      },
+      "health": {
+        "title": "Health",
+        "desc": "Understand diseases, their treatments, and how to protect your health."
+      }
+    },
+    "health": {
+      "disclaimer": "This topic is for general education only. It is not medical advice. Talk to a doctor or qualified health worker about any health concern."
+    },
+    "labs": {
+      "title": "Labs",
+      "intro": "Hands-on simulations. Change the conditions, run the experiment and see what happens.",
+      "tsunami": {
+        "title": "Tsunami Wave Simulator",
+        "desc": "Change magnitude, distance and ocean depth to see how a tsunami behaves."
+      },
+      "cancer": {
+        "title": "Cancer Treatment Lab",
+        "desc": "Try surgery, chemotherapy, targeted drugs, immunotherapy and CAR T cells on a simulated tumour, and watch resistance evolve.",
+        "intro": "A tumour of about 10 billion cells has been found. Hidden inside are a few rare cells that resist some treatments. Choose one action each week. Can you reach remission before the cancer spreads, without harming the patient too much?",
+        "week": "Week",
+        "burden": "Cancer cells",
+        "spread": "Spread",
+        "spreadYes": "Spread to other organs",
+        "spreadNo": "Not yet",
+        "health": "Patient health",
+        "choose": "Choose this week's action",
+        "chart": "Tumour size over time",
+        "chartNote": "The scale is logarithmic: each step up means 10 times more cells. Each coloured line is one group of cancer cells; the dotted line is the total.",
+        "weeks": "weeks",
+        "weekN": "Week {n}:",
+        "start": "Week 0: a tumour has been found. Choose a first action.",
+        "onceOnly": "This treatment can only be given once.",
+        "tooWeak": "The patient is too weak for this treatment now. Wait a week to recover.",
+        "again": "Start again",
+        "undetectable": "undetectable",
+        "billion": "{n} billion",
+        "million": "{n} million",
+        "thousand": "{n} thousand",
+        "clones": {
+          "sens": "Treatment-sensitive",
+          "chemoR": "Chemo-resistant",
+          "targetR": "No drug target",
+          "hidden": "Hidden from CAR T"
+        },
+        "actions": {
+          "wait": {
+            "name": "Wait and recover",
+            "desc": "No treatment. The patient recovers, but the tumour grows."
+          },
+          "surgery": {
+            "name": "Surgery",
+            "desc": "Removes the tumour. Very effective before it spreads. Once only."
+          },
+          "radiation": {
+            "name": "Radiation",
+            "desc": "Kills cells in one area. Less useful after the cancer spreads."
+          },
+          "chemo": {
+            "name": "Chemotherapy",
+            "desc": "Kills fast-dividing cells, but also hurts healthy ones. Some cancer cells resist."
+          },
+          "targeted": {
+            "name": "Targeted therapy",
+            "desc": "Hits cells with one specific mutation. Mild side effects, but useless on cells without the target."
+          },
+          "immuno": {
+            "name": "Immunotherapy",
+            "desc": "Releases the brakes on the immune system. Works over the next 3 weeks."
+          },
+          "cart": {
+            "name": "CAR T cells",
+            "desc": "Engineered T cells hunt every cell carrying the target antigen. Powerful but risky. Once only."
+          }
+        },
+        "msg": {
+          "wait": "No treatment this week.",
+          "surgery": "Surgeons removed the tumour.",
+          "surgerySpread": "Surgeons removed the main tumour, but the cells that had spread remain.",
+          "radiation": "Radiation destroyed cells in the tumour area.",
+          "radiationSpread": "Radiation hit the main tumour, but the spread cells were out of reach.",
+          "chemo": "Chemotherapy killed many dividing cells, and caused side effects.",
+          "targeted": "The targeted drug hit the cells that carry the mutation.",
+          "immuno": "The patient's immune system is now attacking cancer cells.",
+          "cart": "CAR T cells attacked every cell showing the antigen. The patient had a strong immune reaction.",
+          "spreadNow": "Warning: cancer cells have spread to other organs.",
+          "shrank": "The tumour shrank from {from} to {to} cells.",
+          "grew": "The tumour grew from {from} to {to} cells.",
+          "resistance": "{pct}% of the remaining cancer cells now resist at least one treatment."
+        },
+        "line": {
+          "fatal": "Fatal size",
+          "detect": "Visible on scans (~1 billion cells)",
+          "cure": "Remission (undetectable)"
+        },
+        "result": {
+          "win": {
+            "title": "Remission!",
+            "body": "No cancer cells can be detected after {weeks} weeks. In real life, doctors keep checking for years, because a few hidden cells can come back."
+          },
+          "spread": {
+            "title": "The cancer spread too far",
+            "body": "After {weeks} weeks the cancer became too large. Waiting, or using weak treatments, lets cancer grow and spread."
+          },
+          "time": {
+            "title": "The cancer is still there",
+            "body": "After {weeks} weeks some cancer cells remain, often the resistant ones. Look at the chart: which colour survived? Try combining different treatments."
+          }
+        },
+        "tipsTitle": "What this lab shows",
+        "tips": [
+          "Early treatment works best: surgery and radiation are strongest before cancer spreads.",
+          "Using the same drug again and again selects the cells that resist it. That is evolution in action.",
+          "Combining treatments that work in different ways leaves cancer fewer ways to escape.",
+          "Every treatment costs the patient something. Doctors balance killing cancer with protecting healthy cells.",
+          "This is a simplified teaching model. Real treatment is planned by specialist doctors for each patient."
+        ]
+      }
     }
   },
   "topics": {
@@ -366,6 +494,34 @@ LH.i18n.en = {
     "heatwave": {
       "title": "Heatwave",
       "desc": "Dangerously hot weather lasting many days."
+    },
+    "drr": {
+      "title": "Tsunami & Disaster Risk Reduction",
+      "desc": "Global goals, lessons from Japan and the Asia-Pacific, and preparing your family and community.",
+      "intro": "Four modules, one path. Each module ends with a reflection. Finish every lesson to unlock the final exam, and build your own DRR plan at any time."
+    },
+    "cancer": {
+      "title": "Cancer",
+      "desc": "What cancer is, how it spreads, why it is hard to cure, and how chemotherapy, immunotherapy and CAR T cells fight it.",
+      "intro": "Three modules on the biology of cancer and the science of treating it. Finish every lesson to unlock the final exam, and experiment in the Cancer Treatment Lab."
+    },
+    "heart": {
+      "title": "Heart health"
+    },
+    "diabetes": {
+      "title": "Diabetes"
+    },
+    "mental": {
+      "title": "Mental health"
+    },
+    "infection": {
+      "title": "Infectious diseases"
+    },
+    "firstaid": {
+      "title": "First aid"
+    },
+    "nutrition": {
+      "title": "Nutrition"
     }
   },
   "forum": {
@@ -484,6 +640,26 @@ LH.i18n.en = {
     "world_voice": {
       "name": "World Voice",
       "desc": "Explore LearnHub in another language."
+    },
+    "module_c1": {
+      "name": "Cell Explorer",
+      "desc": "Complete Cancer Module 1: Understanding cancer."
+    },
+    "module_c2": {
+      "name": "Evolution Detective",
+      "desc": "Complete Cancer Module 2: Why cancer is hard to cure."
+    },
+    "module_c3": {
+      "name": "Treatment Strategist",
+      "desc": "Complete Cancer Module 3: Treatments and solutions."
+    },
+    "lab_remission": {
+      "name": "Lab Healer",
+      "desc": "Reach remission in the Cancer Treatment Lab."
+    },
+    "exam_cancer": {
+      "name": "Cancer Science Graduate",
+      "desc": "Pass the Cancer final exam."
     }
   },
   "modules": {
@@ -502,6 +678,18 @@ LH.i18n.en = {
     "m4": {
       "title": "Preparing for Future Disasters",
       "desc": "Leave no one behind, community action, building back better and your own emergency supplies."
+    },
+    "c1": {
+      "title": "Understanding cancer",
+      "desc": "What cancer is, its main types, its stages and how it spreads."
+    },
+    "c2": {
+      "title": "Why cancer is hard to cure",
+      "desc": "Our own cells, evolution and resistance, and hiding from the immune system."
+    },
+    "c3": {
+      "title": "Treatments and solutions",
+      "desc": "Surgery, radiation, chemotherapy, targeted drugs, immunotherapy, CAR T cells, prevention and more."
     }
   }
 };

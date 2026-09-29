@@ -16,15 +16,47 @@ LH.FONT_LINKS = {
   ja: 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap'
 };
 
+/* Home page categories */
+LH.CATEGORIES = [
+  { id: 'emergency', icon: 'alert' },
+  { id: 'health', icon: 'heart' }
+];
+
 /*
- * COURSE — 4 modules. Lesson text, activities and answer keys live in content/en.js
+ * TOPICS — "available" topics have a course (modules below), a lab and an exam.
+ * exam: the content key of the exam question pool (content/<lang>.js or cancer-<lang>.js).
+ */
+LH.TOPICS = [
+  { id: 'drr', cat: 'emergency', icon: 'wave', accent: '#1f6f8b', available: true, lab: 'tsunami', exam: 'exam' },
+  { id: 'earthquake', cat: 'emergency', icon: 'quake', accent: '#8a5a3b' },
+  { id: 'flood', cat: 'emergency', icon: 'flood', accent: '#2f86a6' },
+  { id: 'typhoon', cat: 'emergency', icon: 'storm', accent: '#4f7590' },
+  { id: 'landslide', cat: 'emergency', icon: 'landslide', accent: '#7a6a3a' },
+  { id: 'wildfire', cat: 'emergency', icon: 'fire', accent: '#c8643b' },
+  { id: 'drought', cat: 'emergency', icon: 'drought', accent: '#b8891f' },
+  { id: 'volcano', cat: 'emergency', icon: 'volcano', accent: '#a3462d' },
+  { id: 'heatwave', cat: 'emergency', icon: 'heat', accent: '#d2772a' },
+  { id: 'cancer', cat: 'health', icon: 'cell', accent: '#b04a6a', available: true, lab: 'cancer', exam: 'examCancer' },
+  { id: 'heart', cat: 'health', icon: 'heart', accent: '#c8643b' },
+  { id: 'diabetes', cat: 'health', icon: 'drop', accent: '#2f86a6' },
+  { id: 'mental', cat: 'health', icon: 'sun', accent: '#b8891f' },
+  { id: 'infection', cat: 'health', icon: 'shield', accent: '#5f8a3e' },
+  { id: 'firstaid', cat: 'health', icon: 'hand', accent: '#a3462d' },
+  { id: 'nutrition', cat: 'health', icon: 'leaf', accent: '#6b9a47' }
+];
+
+/*
+ * MODULES — lesson text, activities and answer keys live in the content files
  * under lessons.<id>. Lessons unlock in order inside each module.
  */
 LH.MODULES = [
-  { id: 'm1', icon: 'compass', accent: '#2d5a3d', lessons: ['m1l1', 'm1l2', 'm1l3', 'm1l4', 'm1l5', 'm1l6', 'm1r'] },
-  { id: 'm2', icon: 'school', accent: '#1f6f8b', lessons: ['m2l1', 'm2l2', 'm2l3', 'm2l4', 'm2l5', 'm2l6', 'm2r'] },
-  { id: 'm3', icon: 'globe', accent: '#b8891f', lessons: ['m3l1', 'm3l2', 'm3l3', 'm3l4', 'm3l5', 'm3l6', 'm3l7', 'm3r'] },
-  { id: 'm4', icon: 'users', accent: '#c8643b', lessons: ['m4l1', 'm4l2', 'm4l3', 'm4l4', 'm4l5', 'm4l6', 'm4r'] }
+  { id: 'm1', topic: 'drr', icon: 'compass', accent: '#2d5a3d', lessons: ['m1l1', 'm1l2', 'm1l3', 'm1l4', 'm1l5', 'm1l6', 'm1r'] },
+  { id: 'm2', topic: 'drr', icon: 'school', accent: '#1f6f8b', lessons: ['m2l1', 'm2l2', 'm2l3', 'm2l4', 'm2l5', 'm2l6', 'm2r'] },
+  { id: 'm3', topic: 'drr', icon: 'globe', accent: '#b8891f', lessons: ['m3l1', 'm3l2', 'm3l3', 'm3l4', 'm3l5', 'm3l6', 'm3l7', 'm3r'] },
+  { id: 'm4', topic: 'drr', icon: 'users', accent: '#c8643b', lessons: ['m4l1', 'm4l2', 'm4l3', 'm4l4', 'm4l5', 'm4l6', 'm4r'] },
+  { id: 'c1', topic: 'cancer', icon: 'cell', accent: '#b04a6a', lessons: ['c1l1', 'c1l2', 'c1l3', 'c1l4', 'c1r'] },
+  { id: 'c2', topic: 'cancer', icon: 'dna', accent: '#7a4fa0', lessons: ['c2l1', 'c2l2', 'c2l3', 'c2r'] },
+  { id: 'c3', topic: 'cancer', icon: 'syringe', accent: '#1f6f8b', lessons: ['c3l1', 'c3l2', 'c3l3', 'c3l4', 'c3l5', 'c3l6', 'c3r'] }
 ];
 
 /* Icon per lesson (shown on the trail) */
@@ -32,21 +64,11 @@ LH.LESSON_ICONS = {
   m1l1: 'target', m1l2: 'wave', m1l3: 'fire', m1l4: 'shield', m1l5: 'cycle', m1l6: 'map', m1r: 'book',
   m2l1: 'mountain', m2l2: 'school', m2l3: 'pin', m2l4: 'eye', m2l5: 'pin', m2l6: 'heart', m2r: 'book',
   m3l1: 'wave', m3l2: 'wave', m3l3: 'volcano', m3l4: 'radio', m3l5: 'sun', m3l6: 'sprout', m3l7: 'flag', m3r: 'book',
-  m4l1: 'hand', m4l2: 'access', m4l3: 'users', m4l4: 'home', m4l5: 'box', m4l6: 'backpack', m4r: 'book'
+  m4l1: 'hand', m4l2: 'access', m4l3: 'users', m4l4: 'home', m4l5: 'box', m4l6: 'backpack', m4r: 'book',
+  c1l1: 'cell', c1l2: 'layers', c1l3: 'signpost', c1l4: 'map', c1r: 'book',
+  c2l1: 'dna', c2l2: 'shuffle', c2l3: 'eye', c2r: 'book',
+  c3l1: 'hand', c3l2: 'flask', c3l3: 'target', c3l4: 'shield', c3l5: 'microscope', c3l6: 'heart', c3r: 'book'
 };
-
-/* Hazard library shown on the home page (tsunami is covered by the course) */
-LH.HAZARDS = [
-  { id: 'tsunami', icon: 'wave', accent: '#1f6f8b', course: true },
-  { id: 'earthquake', icon: 'quake', accent: '#8a5a3b' },
-  { id: 'flood', icon: 'flood', accent: '#2f86a6' },
-  { id: 'typhoon', icon: 'storm', accent: '#4f7590' },
-  { id: 'landslide', icon: 'landslide', accent: '#7a6a3a' },
-  { id: 'wildfire', icon: 'fire', accent: '#c8643b' },
-  { id: 'drought', icon: 'drought', accent: '#b8891f' },
-  { id: 'volcano', icon: 'volcano', accent: '#a3462d' },
-  { id: 'heatwave', icon: 'heat', accent: '#d2772a' }
-];
 
 LH.BADGES = [
   { id: 'first_sprout', icon: 'sprout' },
@@ -62,6 +84,11 @@ LH.BADGES = [
   { id: 'ready_pack', icon: 'backpack' },
   { id: 'plan_maker', icon: 'map' },
   { id: 'exam_pass', icon: 'trophy' },
+  { id: 'module_c1', icon: 'cell' },
+  { id: 'module_c2', icon: 'dna' },
+  { id: 'module_c3', icon: 'syringe' },
+  { id: 'lab_remission', icon: 'microscope' },
+  { id: 'exam_cancer', icon: 'star' },
   { id: 'world_voice', icon: 'globe' }
 ];
 

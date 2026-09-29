@@ -5,6 +5,7 @@
   var LH = window.LH;
   var icon = LH.icon;
   var STORE_KEY = 'learnhub.v2';
+  var ASSET_V = '?v=3'; // bump with the ?v= tags in index.html so browsers fetch fresh files
 
   function $(sel, root) { return (root || document).querySelector(sel); }
   function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
@@ -17,9 +18,14 @@
       done: {}, answered: {}, firstTry: 0, acts: {}, journal: {},
       badges: {}, sim: { runs: 0, maxDepth: 0 }, simLast: null,
       forumRead: [], kit: [],
-      exam: { best: 0, passed: false, name: '', date: '' },
+      exams: {}, certName: '',
+      lab: { runs: 0, remission: false },
       plan: {}, planDone: false
     };
+  }
+  function examState(tid) {
+    S.exams[tid] = Object.assign({ best: 0, passed: false, date: '' }, S.exams[tid]);
+    return S.exams[tid];
   }
   var S = loadState();
 
@@ -29,7 +35,13 @@
       if (raw) {
         var d = defaults(), s = Object.assign(d, JSON.parse(raw));
         s.sim = Object.assign({ runs: 0, maxDepth: 0 }, s.sim);
-        s.exam = Object.assign(defaults().exam, s.exam);
+        s.lab = Object.assign({ runs: 0, remission: false }, s.lab);
+        // older versions stored a single exam (the DRR course)
+        if (s.exam) {
+          s.exams.drr = { best: s.exam.best || 0, passed: !!s.exam.passed, date: s.exam.date || '' };
+          if (s.exam.name && !s.certName) s.certName = s.exam.name;
+          delete s.exam;
+        }
         return s;
       }
     } catch (e) { /* storage unavailable or corrupted: start fresh */ }
@@ -105,8 +117,9 @@
     }
     if (LH.i18n[code] && LH.i18n[code].lessons) return Promise.resolve(code);
     // UI strings first (the file replaces LH.i18n[code]), then the lesson content that extends it
-    return addScript('assets/js/i18n/' + code + '.js')
-      .then(function () { return addScript('assets/js/content/' + code + '.js'); })
+    return addScript('assets/js/i18n/' + code + '.js' + ASSET_V)
+      .then(function () { return addScript('assets/js/content/' + code + '.js' + ASSET_V); })
+      .then(function () { return addScript('assets/js/content/cancer-' + code + '.js' + ASSET_V); })
       .then(function () { return LH.i18n[code] ? code : 'en'; });
   }
 
@@ -131,6 +144,8 @@
 
   /* ================= Course helpers ================= */
 
+  function topic(id) { return LH.TOPICS.filter(function (x) { return x.id === id; })[0]; }
+  function topicMods(tid) { return LH.MODULES.filter(function (m) { return m.topic === tid; }); }
   function moduleOf(lid) { return LH.MODULES.filter(function (m) { return m.lessons.indexOf(lid) !== -1; })[0]; }
   function mod(id) { return LH.MODULES.filter(function (m) { return m.id === id; })[0]; }
   function isDone(lid) { return !!S.done[lid]; }
@@ -139,10 +154,16 @@
     return i === 0 || isDone(lid) || isDone(m.lessons[i - 1]);
   }
   function modDone(m) { return m.lessons.filter(isDone).length; }
-  function allLessons() { return LH.MODULES.reduce(function (a, m) { return a.concat(m.lessons); }, []); }
-  function totalDone() { return allLessons().filter(isDone).length; }
-  function nextLesson() { return allLessons().filter(function (l) { return !isDone(l) && isUnlocked(l); })[0] || null; }
-  function examUnlocked() { return totalDone() === allLessons().length; }
+  function modComplete(id) { var m = mod(id); return !!m && modDone(m) === m.lessons.length; }
+  /* lessons of one topic, or of every topic when tid is omitted */
+  function allLessons(tid) {
+    return LH.MODULES.filter(function (m) { return !tid || m.topic === tid; })
+      .reduce(function (a, m) { return a.concat(m.lessons); }, []);
+  }
+  function totalDone(tid) { return allLessons(tid).filter(isDone).length; }
+  function nextLesson(tid) { return allLessons(tid).filter(function (l) { return !isDone(l) && isUnlocked(l); })[0] || null; }
+  function examUnlocked(tid) { return totalDone(tid) === allLessons(tid).length; }
+  function topicTitle(tid) { return t('topics.' + tid + '.title'); }
   function lessonTitle(lid) { return t('lessons.' + lid + '.title'); }
 
   function levelInfo(xp) {
@@ -172,18 +193,23 @@
 
   var RULES = {
     first_sprout: function () { return totalDone() >= 1; },
-    module_m1: function () { return modDone(mod('m1')) === mod('m1').lessons.length; },
-    module_m2: function () { return modDone(mod('m2')) === mod('m2').lessons.length; },
-    module_m3: function () { return modDone(mod('m3')) === mod('m3').lessons.length; },
-    module_m4: function () { return modDone(mod('m4')) === mod('m4').lessons.length; },
-    reflective: function () { return LH.MODULES.every(function (m) { return isDone(m.id + 'r'); }); },
+    module_m1: function () { return modComplete('m1'); },
+    module_m2: function () { return modComplete('m2'); },
+    module_m3: function () { return modComplete('m3'); },
+    module_m4: function () { return modComplete('m4'); },
+    reflective: function () { return topicMods('drr').every(function (m) { return isDone(m.id + 'r'); }); },
+    module_c1: function () { return modComplete('c1'); },
+    module_c2: function () { return modComplete('c2'); },
+    module_c3: function () { return modComplete('c3'); },
+    lab_remission: function () { return !!S.lab.remission; },
+    exam_cancer: function () { return !!examState('cancer').passed; },
     sharp_eye: function () { return S.firstTry >= 10; },
     wave_scientist: function () { return S.sim.runs >= 1; },
     deep_diver: function () { return S.sim.maxDepth >= 6000; },
     wise_owl: function () { return S.forumRead.length >= 5; },
     ready_pack: function () { return S.kit.length >= LH.KIT.length; },
     plan_maker: function () { return planComplete(); },
-    exam_pass: function () { return !!S.exam.passed; },
+    exam_pass: function () { return !!examState('drr').passed; },
     world_voice: function () { return !!S.langSwitched; }
   };
 
@@ -207,11 +233,23 @@
 
   var NAV = [
     { id: 'home', href: '#/', icon: 'home' },
-    { id: 'course', href: '#/course', icon: 'signpost' },
-    { id: 'sim', href: '#/sim', icon: 'flask' },
-    { id: 'forum', href: '#/forum', icon: 'chat' },
-    { id: 'plan', href: '#/plan', icon: 'map' }
+    { id: 'emergency', href: '#/topic/drr', icon: 'alert' },
+    { id: 'health', href: '#/topic/cancer', icon: 'heart' },
+    { id: 'labs', href: '#/labs', icon: 'flask' },
+    { id: 'forum', href: '#/forum', icon: 'chat' }
   ];
+  /* which nav tab is active for each view */
+  function navFor(view, arg) {
+    if (view === 'topic' || view === 'exam' || view === 'module' || view === 'lesson') {
+      var tid = view === 'topic' || view === 'exam' ? (arg || 'drr')
+        : view === 'module' ? (mod(arg) || {}).topic : (moduleOf(arg || '') || {}).topic;
+      return (topic(tid) || {}).cat === 'health' ? 'health' : 'emergency';
+    }
+    if (view === 'plan') return 'emergency';
+    if (view === 'lab' || view === 'sim') return 'labs';
+    return view;
+  }
+  var currentArg = null;
   var currentView = 'home';
 
   function badgeCountText() { return Object.keys(S.badges).length + '/' + LH.BADGES.length; }
@@ -254,7 +292,7 @@
   }
 
   function setActiveNav() {
-    var navView = { module: 'course', lesson: 'course', exam: 'course' }[currentView] || currentView;
+    var navView = navFor(currentView, currentArg);
     $$('[data-nav]').forEach(function (a) {
       var on = a.getAttribute('data-nav') === navView;
       a.classList.toggle('active', on);
@@ -359,11 +397,18 @@
     var main = $('#main');
     var view = parts[0] || 'home';
     currentView = view;
+    currentArg = parts[1] || null;
     switch (view) {
-      case 'course': viewCourse(main); break;
+      case 'course': return redirect('#/topic/drr'); // older links
+      case 'topic': viewTopic(main, parts[1]); break;
       case 'module': viewModule(main, parts[1]); break;
       case 'lesson': viewLesson(main, parts[1]); break;
-      case 'exam': viewExam(main); break;
+      case 'exam': viewExam(main, parts[1] || 'drr'); break;
+      case 'labs': viewLabs(main); break;
+      case 'lab':
+        if (parts[1] === 'cancer') viewCancerLab(main);
+        else { currentView = 'sim'; viewSim(main); }
+        break;
       case 'plan': viewPlan(main); break;
       case 'sim': viewSim(main); break;
       case 'forum': viewForum(main); break;
@@ -386,25 +431,28 @@
       '<text x="22" y="26" text-anchor="middle">' + Math.round(pct * 100) + '%</text></svg>';
   }
 
-  function moduleCard(m, i) {
-    var d = modDone(m), total = m.lessons.length;
-    return '<a class="topic-card module-card" href="#/module/' + m.id + '" style="--accent:' + m.accent + '">' +
-      '<div class="topic-top"><span class="topic-ic">' + icon(m.icon) + '</span>' + ring(d / total, m.accent) + '</div>' +
-      '<small class="eyebrow-sm">' + T('ui.course.moduleN', { n: i + 1 }) + '</small>' +
-      '<h3>' + T('modules.' + m.id + '.title') + '</h3><p>' + T('modules.' + m.id + '.desc') + '</p>' +
-      '<span class="topic-meta">' + icon('signpost') + ' ' + T('ui.course.lessonsDone', { done: d, total: total }) + '</span></a>';
-  }
+  function moduleIndex(m) { return topicMods(m.topic).indexOf(m); }
 
-  function finalCards() {
-    var ex = examUnlocked();
-    return '<a class="topic-card final-card" href="#/exam" style="--accent:#6b4a2f">' +
+  /* exam, lab and (for DRR) plan cards shown at the end of a topic */
+  function finalCards(tid) {
+    var tp = topic(tid), ex = examUnlocked(tid), es = examState(tid);
+    var html = '<a class="topic-card final-card" href="#/exam/' + tid + '" style="--accent:#6b4a2f">' +
         '<div class="topic-top"><span class="topic-ic">' + icon('trophy') + '</span>' +
-        (S.exam.passed ? '<span class="pill pill-ok">' + icon('check') + ' ' + T('ui.exam.passedShort') + '</span>' : ex ? '' : '<span class="pill">' + icon('lock') + ' ' + T('ui.course.locked') + '</span>') + '</div>' +
+        (es.passed ? '<span class="pill pill-ok">' + icon('check') + ' ' + T('ui.exam.passedShort') + '</span>' : ex ? '' : '<span class="pill">' + icon('lock') + ' ' + T('ui.course.locked') + '</span>') + '</div>' +
         '<h3>' + T('ui.exam.title') + '</h3><p>' + T('ui.exam.desc') + '</p></a>' +
-      '<a class="topic-card final-card" href="#/plan" style="--accent:#5f8a3e">' +
-        '<div class="topic-top"><span class="topic-ic">' + icon('map') + '</span>' +
-        (planComplete() ? '<span class="pill pill-ok">' + icon('check') + ' ' + T('ui.plan.readyShort') + '</span>' : '') + '</div>' +
-        '<h3>' + T('ui.plan.title') + '</h3><p>' + T('ui.plan.desc') + '</p></a>';
+      '<a class="topic-card final-card" href="#/lab/' + tp.lab + '" style="--accent:' + tp.accent + '">' +
+        '<div class="topic-top"><span class="topic-ic">' + icon('flask') + '</span></div>' +
+        '<h3>' + T('ui.labs.' + tp.lab + '.title') + '</h3><p>' + T('ui.labs.' + tp.lab + '.desc') + '</p></a>';
+    if (tid === 'drr') {
+      html += '<a class="topic-card final-card" href="#/plan" style="--accent:#5f8a3e">' +
+          '<div class="topic-top"><span class="topic-ic">' + icon('map') + '</span>' +
+          (planComplete() ? '<span class="pill pill-ok">' + icon('check') + ' ' + T('ui.plan.readyShort') + '</span>' : '') + '</div>' +
+          '<h3>' + T('ui.plan.title') + '</h3><p>' + T('ui.plan.desc') + '</p></a>' +
+        '<a class="topic-card final-card" href="#/forum" style="--accent:#5f8a3e">' +
+          '<div class="topic-top"><span class="topic-ic">' + icon('chat') + '</span></div>' +
+          '<h3>' + T('ui.home.forumTitle') + '</h3><p>' + T('ui.home.forumDesc') + '</p></a>';
+    }
+    return html;
   }
 
   /* ================= View: Home ================= */
@@ -427,23 +475,37 @@
       '</svg>';
   }
 
+  /* big card for a topic that has a course */
+  function topicCard(tp) {
+    var total = allLessons(tp.id).length, d = totalDone(tp.id), nxt = nextLesson(tp.id);
+    var cta = !d ? T('ui.home.start') : nxt ? T('ui.home.continue') : T('ui.home.review');
+    var href = nxt ? '#/lesson/' + nxt : '#/topic/' + tp.id;
+    return '<div class="card topic-feature" style="--accent:' + tp.accent + '">' +
+      '<a class="tf-head" href="#/topic/' + tp.id + '"><span class="topic-ic">' + icon(tp.icon) + '</span>' +
+        '<div><h3>' + T('topics.' + tp.id + '.title') + '</h3><p>' + T('topics.' + tp.id + '.desc') + '</p></div>' + ring(d / total, tp.accent) + '</a>' +
+      '<div class="tf-meta">' +
+        '<span>' + icon('layers') + ' ' + T('ui.home.modulesN', { n: topicMods(tp.id).length }) + '</span>' +
+        '<span>' + icon('signpost') + ' ' + T('ui.course.lessonsDone', { done: d, total: total }) + '</span>' +
+        (examState(tp.id).passed ? '<span class="ok">' + icon('check') + ' ' + T('ui.exam.passedShort') + '</span>' : '') +
+      '</div>' +
+      '<div class="btn-row">' +
+        '<a class="btn btn-primary btn-sm" href="' + href + '">' + icon('sprout') + ' ' + cta + '</a>' +
+        '<a class="btn btn-ghost btn-sm" href="#/lab/' + tp.lab + '">' + icon('flask') + ' ' + T('ui.home.openLab') + '</a>' +
+        '<a class="btn btn-ghost btn-sm" href="#/exam/' + tp.id + '">' + icon('trophy') + ' ' + T('ui.exam.title') + '</a>' +
+      '</div></div>';
+  }
+
   function viewHome(main) {
     var L = levelInfo(S.xp);
-    var nxt = nextLesson();
-    var cta, href;
-    if (!totalDone()) { cta = T('ui.home.start'); href = '#/lesson/' + allLessons()[0]; }
-    else if (nxt) { cta = T('ui.home.continue'); href = '#/lesson/' + nxt; }
-    else { cta = T('ui.home.review'); href = '#/course'; }
-
     main.innerHTML =
       '<section class="wrap hero">' +
         '<div class="hero-text">' +
           '<span class="eyebrow">' + icon('leaf') + ' ' + T('ui.tagline') + '</span>' +
           '<h1>' + T('ui.home.hello') + '</h1>' +
           '<p class="lead">' + T('ui.home.intro') + '</p>' +
-          '<div class="btn-row"><a class="btn btn-primary" href="' + href + '">' + icon('sprout') + ' ' + cta + '</a>' +
-          '<a class="btn btn-ghost" href="#/course">' + icon('signpost') + ' ' + T('ui.home.seeCourse') + '</a></div>' +
-          (nxt && totalDone() ? '<p class="muted small next-up">' + icon('arrowRight') + ' ' + T('ui.home.nextUp') + ': <strong>' + esc(lessonTitle(nxt)) + '</strong></p>' : '') +
+          '<div class="btn-row">' + LH.CATEGORIES.map(function (c) {
+            return '<a class="btn ' + (c.id === 'emergency' ? 'btn-primary' : 'btn-sea') + '" href="#cat-' + c.id + '" data-jump="cat-' + c.id + '">' + icon(c.icon) + ' ' + T('ui.categories.' + c.id + '.title') + '</a>';
+          }).join('') + '</div>' +
         '</div>' +
         '<div class="hero-art">' + heroArt() + '</div>' +
       '</section>' +
@@ -465,35 +527,61 @@
         '</div>' +
       '</section>' +
 
-      '<section class="wrap"><h2 class="section-title">' + icon('compass') + ' ' + T('ui.home.courseTitle') + '</h2>' +
-        '<div class="topic-grid">' + LH.MODULES.map(moduleCard).join('') + finalCards() + '</div></section>' +
+      LH.CATEGORIES.map(function (c) {
+        var live = LH.TOPICS.filter(function (tp) { return tp.cat === c.id && tp.available; });
+        var soon = LH.TOPICS.filter(function (tp) { return tp.cat === c.id && !tp.available; });
+        return '<section class="wrap cat-section cat-' + c.id + '" id="cat-' + c.id + '">' +
+          '<div class="cat-head"><span class="cat-badge">' + icon(c.icon) + '</span><div>' +
+            '<h2>' + T('ui.categories.' + c.id + '.title') + '</h2><p class="muted">' + T('ui.categories.' + c.id + '.desc') + '</p></div></div>' +
+          '<div class="topic-feature-grid">' + live.map(topicCard).join('') + '</div>' +
+          (soon.length ? '<h3 class="soon-title">' + T('ui.home.comingSoon') + '</h3><div class="hazard-row">' + soon.map(function (h) {
+            return '<div class="hazard" style="--accent:' + h.accent + '"><span class="topic-ic">' + icon(h.icon) + '</span>' +
+              '<strong>' + T('topics.' + h.id + '.title') + '</strong></div>';
+          }).join('') + '</div>' : '') +
+        '</section>';
+      }).join('');
 
-      '<section class="wrap feature-row">' +
-        '<a class="feature feature-sea" href="#/sim"><span class="feature-ic">' + icon('flask') + '</span><div><h3>' + T('ui.home.simTitle') + '</h3><p>' + T('ui.home.simDesc') + '</p></div>' + icon('arrowRight', 'go') + '</a>' +
-        '<a class="feature feature-moss" href="#/forum"><span class="feature-ic">' + icon('chat') + '</span><div><h3>' + T('ui.home.forumTitle') + '</h3><p>' + T('ui.home.forumDesc') + '</p></div>' + icon('arrowRight', 'go') + '</a>' +
-      '</section>' +
-
-      '<section class="wrap"><h2 class="section-title">' + icon('leaf') + ' ' + T('ui.home.hazardsTitle') + '</h2>' +
-        '<p class="muted">' + T('ui.home.hazardsIntro') + '</p>' +
-        '<div class="hazard-row">' + LH.HAZARDS.map(function (h) {
-          return '<div class="hazard' + (h.course ? ' on' : '') + '" style="--accent:' + h.accent + '"><span class="topic-ic">' + icon(h.icon) + '</span>' +
-            '<strong>' + T('topics.' + h.id + '.title') + '</strong><small>' + (h.course ? T('ui.home.inCourse') : T('ui.home.comingSoon')) + '</small></div>';
-        }).join('') + '</div></section>';
+    $$('[data-jump]', main).forEach(function (a) {
+      a.addEventListener('click', function (e) {
+        e.preventDefault();
+        var el = document.getElementById(a.getAttribute('data-jump'));
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
   }
 
-  /* ================= View: Course overview ================= */
+  /* ================= View: Labs ================= */
+
+  function viewLabs(main) {
+    main.innerHTML =
+      '<section class="wrap page-head">' +
+        '<div class="page-title" style="--accent:#1f6f8b"><span class="topic-ic">' + icon('flask') + '</span>' +
+          '<div><h1>' + T('ui.labs.title') + '</h1><p class="muted">' + T('ui.labs.intro') + '</p></div></div>' +
+      '</section>' +
+      '<section class="wrap feature-row">' + LH.TOPICS.filter(function (tp) { return tp.available; }).map(function (tp) {
+        return '<a class="feature ' + (tp.cat === 'health' ? 'feature-rose' : 'feature-sea') + '" href="#/lab/' + tp.lab + '"><span class="feature-ic">' + icon(tp.cat === 'health' ? 'cell' : 'wave') + '</span>' +
+          '<div><small>' + T('ui.categories.' + tp.cat + '.title') + '</small><h3>' + T('ui.labs.' + tp.lab + '.title') + '</h3><p>' + T('ui.labs.' + tp.lab + '.desc') + '</p></div>' + icon('arrowRight', 'go') + '</a>';
+      }).join('') + '</section>';
+  }
+
+  /* ================= View: Topic overview ================= */
 
   function lessonStatus(lid) { return isDone(lid) ? 'done' : isUnlocked(lid) ? 'current' : 'locked'; }
 
-  function viewCourse(main) {
-    var pct = Math.round(totalDone() / allLessons().length * 100);
+  function viewTopic(main, tid) {
+    var tp = topic(tid);
+    if (!tp || !tp.available) return redirect('#/');
+    var mods = topicMods(tid);
+    var pct = Math.round(totalDone(tid) / allLessons(tid).length * 100);
     main.innerHTML =
       '<section class="wrap page-head">' +
-        '<div class="page-title" style="--accent:#2d5a3d"><span class="topic-ic">' + icon('signpost') + '</span>' +
-          '<div><h1>' + T('ui.course.title') + '</h1><p class="muted">' + T('ui.course.intro') + '</p></div></div>' +
+        '<a class="back" href="#/">' + icon('arrowLeft') + ' ' + T('ui.categories.' + tp.cat + '.title') + '</a>' +
+        '<div class="page-title" style="--accent:' + tp.accent + '"><span class="topic-ic">' + icon(tp.icon) + '</span>' +
+          '<div><h1>' + T('topics.' + tid + '.title') + '</h1><p class="muted">' + T('topics.' + tid + '.intro') + '</p></div></div>' +
         '<div class="progress-line"><div class="bar"><span style="width:' + pct + '%"></span></div><strong>' + T('ui.learn.progress', { pct: pct }) + '</strong></div>' +
+        (tp.cat === 'health' ? '<p class="note">' + icon('heart') + ' ' + T('ui.health.disclaimer') + '</p>' : '') +
       '</section>' +
-      '<section class="wrap course-list">' + LH.MODULES.map(function (m, i) {
+      '<section class="wrap course-list">' + mods.map(function (m, i) {
         return '<div class="card course-mod" style="--accent:' + m.accent + '">' +
           '<a class="course-mod-head" href="#/module/' + m.id + '"><span class="topic-ic">' + icon(m.icon) + '</span>' +
             '<div><small class="eyebrow-sm">' + T('ui.course.moduleN', { n: i + 1 }) + '</small><h2>' + T('modules.' + m.id + '.title') + '</h2></div>' +
@@ -506,15 +594,15 @@
             return '<li>' + (st === 'locked' ? '<span class="ll locked">' + inner + '</span>' : '<a class="ll" href="#/lesson/' + lid + '">' + inner + '</a>') + '</li>';
           }).join('') + '</ol></div>';
       }).join('') +
-      '<div class="topic-grid final-grid">' + finalCards() + '</div></section>';
+      '<div class="topic-grid final-grid">' + finalCards(tid) + '</div></section>';
   }
 
   /* ================= View: Module trail ================= */
 
   function viewModule(main, mid) {
     var m = mod(mid);
-    if (!m) return redirect('#/course');
-    var mi = LH.MODULES.indexOf(m);
+    if (!m) return redirect('#/');
+    var mods = topicMods(m.topic), mi = mods.indexOf(m);
     var ls = m.lessons, n = ls.length;
     var d = modDone(m), pct = Math.round((d / n) * 100);
     var GAP = 132, TOP = 70, Hh = TOP * 2 + GAP * (n - 1);
@@ -549,10 +637,10 @@
       '</div>';
     }).join('');
 
-    var nextMod = LH.MODULES[mi + 1];
+    var nextMod = mods[mi + 1];
     main.innerHTML =
       '<section class="wrap page-head">' +
-        '<a class="back" href="#/course">' + icon('arrowLeft') + ' ' + T('ui.course.title') + '</a>' +
+        '<a class="back" href="#/topic/' + m.topic + '">' + icon('arrowLeft') + ' ' + T('topics.' + m.topic + '.title') + '</a>' +
         '<div class="page-title" style="--accent:' + m.accent + '"><span class="topic-ic">' + icon(m.icon) + '</span>' +
           '<div><small class="eyebrow-sm">' + T('ui.course.moduleN', { n: mi + 1 }) + '</small><h1>' + T('modules.' + mid + '.title') + '</h1><p class="muted">' + T('modules.' + mid + '.desc') + '</p></div></div>' +
         '<div class="progress-line"><div class="bar"><span style="width:' + pct + '%"></span></div><strong>' + T('ui.learn.progress', { pct: pct }) + '</strong></div>' +
@@ -565,7 +653,7 @@
         '</div></div>' +
         '<div class="row-center module-foot">' +
           (nextMod ? '<a class="btn btn-ghost" href="#/module/' + nextMod.id + '">' + T('ui.course.nextModule') + ' ' + icon('arrowRight') + '</a>'
-                   : '<a class="btn btn-ghost" href="#/exam">' + icon('trophy') + ' ' + T('ui.exam.title') + '</a>') +
+                   : '<a class="btn btn-ghost" href="#/exam/' + m.topic + '">' + icon('trophy') + ' ' + T('ui.exam.title') + '</a>') +
         '</div></section>';
 
     $$('.stone', main).forEach(function (btn) {
@@ -1002,6 +1090,11 @@
     return { html: '<a class="tryit" href="#/sim">' + icon('flask') + '<div><strong>' + T('ui.reader.tryIt') + '</strong><p>' + T('ui.reader.tryItDesc') + '</p></div>' + icon('arrowRight', 'go') + '</a>' };
   };
 
+  /* link card to the cancer lab */
+  BLOCKS.lab = function (P) {
+    return { html: '<a class="tryit tryit-rose" href="#/lab/cancer">' + icon('flask') + '<div><strong>' + esc(P('title') || t('ui.labs.cancer.title')) + '</strong><p>' + esc(P('text') || t('ui.labs.cancer.desc')) + '</p></div>' + icon('arrowRight', 'go') + '</a>' };
+  };
+
   BLOCKS.kit = function () {
     return { html: '<h2 class="block-title">' + icon('backpack') + ' ' + T('ui.forum.kitTitle') + '</h2><div class="card kit kit-inline"></div>', bind: function (el) { renderKit($('.kit', el)); } };
   };
@@ -1159,10 +1252,10 @@
 
   function viewLesson(main, lid) {
     var m = moduleOf(lid || '');
-    if (!m || !en('lessons.' + lid)) return redirect('#/course');
+    if (!m || !en('lessons.' + lid)) return redirect('#/');
     if (!isUnlocked(lid)) { toast(icon('lock') + ' ' + T('ui.learn.locked')); return redirect('#/module/' + m.id); }
 
-    var idx = m.lessons.indexOf(lid), mi = LH.MODULES.indexOf(m);
+    var idx = m.lessons.indexOf(lid), mods = topicMods(m.topic), mi = mods.indexOf(m);
     var base = 'lessons.' + lid;
     var blocks = en(base + '.blocks') || [];
     var already = isDone(lid);
@@ -1216,11 +1309,11 @@
         checkBadges();
         if (isLast) {
           location.hash = '#/module/' + m.id;
-          var nextMod = LH.MODULES[mi + 1];
+          var nextMod = mods[mi + 1];
           setTimeout(function () {
             celebrate(t('ui.done.moduleTitle'), t('ui.done.moduleBody', { module: t('modules.' + m.id + '.title') }),
               nextMod ? '<a class="btn btn-primary" href="#/module/' + nextMod.id + '" onclick="document.querySelector(\'.modal-close\').click()">' + T('ui.course.nextModule') + '</a>'
-                      : '<a class="btn btn-primary" href="#/exam" onclick="document.querySelector(\'.modal-close\').click()">' + icon('trophy') + ' ' + T('ui.exam.title') + '</a>');
+                      : '<a class="btn btn-primary" href="#/exam/' + m.topic + '" onclick="document.querySelector(\'.modal-close\').click()">' + icon('trophy') + ' ' + T('ui.exam.title') + '</a>');
           }, 250);
           return;
         }
@@ -1232,36 +1325,41 @@
     });
   }
 
-  /* ================= View: Exam ================= */
+  /* ================= View: Exam (one per topic) ================= */
 
-  function viewExam(main) {
-    var head = '<section class="wrap reader"><a class="back" href="#/course">' + icon('arrowLeft') + ' ' + T('ui.course.title') + '</a>' +
-      '<header class="step-head" style="--accent:#6b4a2f"><span class="step-ic">' + icon('trophy') + '</span><div><h1>' + T('ui.exam.title') + '</h1><p class="lead">' + T('ui.exam.desc') + '</p></div></header>';
+  function viewExam(main, tid) {
+    var tp = topic(tid);
+    if (!tp || !tp.available) return redirect('#/');
+    var es = examState(tid), key = tp.exam; // content key of the question pool
+    var head = '<section class="wrap reader"><a class="back" href="#/topic/' + tid + '">' + icon('arrowLeft') + ' ' + T('topics.' + tid + '.title') + '</a>' +
+      '<header class="step-head" style="--accent:' + tp.accent + '"><span class="step-ic">' + icon('trophy') + '</span><div>' +
+      '<small>' + T('topics.' + tid + '.title') + '</small><h1>' + T('ui.exam.title') + '</h1><p class="lead">' + T('ui.exam.desc') + '</p></div></header>';
 
-    if (!examUnlocked()) {
-      main.innerHTML = head + '<div class="card locked-card">' + icon('lock') + '<p>' + T('ui.exam.lockedMsg', { n: allLessons().length - totalDone() }) + '</p>' +
-        '<a class="btn btn-primary" href="' + (nextLesson() ? '#/lesson/' + nextLesson() : '#/course') + '">' + T('ui.home.continue') + '</a></div>' +
-        (S.exam.passed ? certificateHTML() : '') + '</section>';
+    if (!examUnlocked(tid)) {
+      var nx = nextLesson(tid);
+      main.innerHTML = head + '<div class="card locked-card">' + icon('lock') + '<p>' + T('ui.exam.lockedMsg', { n: allLessons(tid).length - totalDone(tid) }) + '</p>' +
+        '<a class="btn btn-primary" href="' + (nx ? '#/lesson/' + nx : '#/topic/' + tid) + '">' + T('ui.home.continue') + '</a></div>' +
+        (es.passed ? certificateHTML(tid) : '') + '</section>';
       bindCert(main);
       return;
     }
 
-    var pool = en('exam.questions');
+    var pool = en(key + '.questions');
     var pick = shuffle(pool.map(function (q, i) { return i; })).slice(0, LH.EXAM.count);
     var answers = {};
 
     main.innerHTML = head +
       '<div class="card exam-info"><p>' + T('ui.exam.rules', { n: pick.length, pct: Math.round(LH.EXAM.pass * 100) }) + '</p>' +
-        (S.exam.best ? '<p class="muted small">' + T('ui.exam.best', { score: S.exam.best, total: LH.EXAM.count }) + '</p>' : '') + '</div>' +
+        (es.best ? '<p class="muted small">' + T('ui.exam.best', { score: es.best, total: LH.EXAM.count }) + '</p>' : '') + '</div>' +
       '<div class="quiz exam-q">' + pick.map(function (qi, k) {
-        var q = 'exam.questions.' + qi;
+        var q = key + '.questions.' + qi;
         return '<div class="q card" data-k="' + k + '"><small class="q-num">' + T('ui.reader.questionN', { n: k + 1 }) + '</small><h3>' + T(q + '.q') + '</h3>' +
           '<div class="opts">' + t(q + '.o').map(function (o, oi) {
             return '<button class="opt" type="button" data-o="' + oi + '" aria-pressed="false"><span class="opt-key">' + String.fromCharCode(65 + oi) + '</span><span>' + esc(o) + '</span></button>';
           }).join('') + '</div><div class="feedback"></div></div>';
       }).join('') + '</div>' +
       '<div class="reader-foot"><p class="muted small" id="exam-status"></p><button class="btn btn-primary btn-lg" type="button" id="exam-submit" disabled>' + T('ui.exam.submit') + '</button></div>' +
-      '<div id="exam-result"></div>' + (S.exam.passed ? certificateHTML() : '') + '</section>';
+      '<div id="exam-result"></div>' + (es.passed ? certificateHTML(tid) : '') + '</section>';
 
     var submitted = false;
     function status() {
@@ -1295,21 +1393,21 @@
         });
         var fb = $('.feedback', qEl);
         fb.className = 'feedback ' + (right ? 'ok' : 'bad');
-        fb.innerHTML = icon(right ? 'check' : 'close') + '<div><p>' + T('exam.questions.' + qi + '.e') + '</p></div>';
+        fb.innerHTML = icon(right ? 'check' : 'close') + '<div><p>' + T(key + '.questions.' + qi + '.e') + '</p></div>';
       });
       var passed = score / pick.length >= LH.EXAM.pass;
-      var first = passed && !S.exam.passed;
-      S.exam.best = Math.max(S.exam.best, score);
-      if (passed) { S.exam.passed = true; if (!S.exam.date) S.exam.date = new Date().toISOString().slice(0, 10); }
+      var first = passed && !es.passed;
+      es.best = Math.max(es.best, score);
+      if (passed) { es.passed = true; if (!es.date) es.date = new Date().toISOString().slice(0, 10); }
       if (first) addXP(LH.XP.exam);
       save(); checkBadges();
       $('#exam-result', main).innerHTML = '<div class="card exam-result ' + (passed ? 'pass' : 'fail') + '">' +
         '<div class="celebrate-ic">' + icon(passed ? 'trophy' : 'sprout') + '</div>' +
         '<h2>' + T(passed ? 'ui.exam.passTitle' : 'ui.exam.failTitle') + '</h2>' +
         '<p class="exam-score">' + score + ' / ' + pick.length + '</p>' +
-        '<p>' + T(passed ? 'ui.exam.passBody' : 'ui.exam.failBody') + '</p>' +
+        '<p>' + T(passed ? 'ui.exam.passBody' : 'ui.exam.failBody', { course: t('topics.' + tid + '.title') }) + '</p>' +
         '<button class="btn btn-ghost" type="button" id="exam-retry">' + icon('reset') + ' ' + T('ui.exam.retry') + '</button></div>' +
-        (passed && !$('.certificate', main) ? certificateHTML() : '');
+        (passed && !$('.certificate', main) ? certificateHTML(tid) : '');
       $('#exam-retry', main).addEventListener('click', function () { route(); });
       bindCert(main);
       $('#exam-result', main).scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1317,21 +1415,22 @@
     bindCert(main);
   }
 
-  function certificateHTML() {
+  function certificateHTML(tid) {
+    var es = examState(tid);
     return '<div class="card cert-card"><h2 class="block-title">' + icon('star') + ' ' + T('ui.exam.certTitle') + '</h2>' +
-      '<label class="plan-field"><span>' + T('ui.exam.certName') + '</span><input type="text" id="cert-name" maxlength="60" value="' + esc(S.exam.name) + '"></label>' +
+      '<label class="plan-field"><span>' + T('ui.exam.certName') + '</span><input type="text" id="cert-name" maxlength="60" value="' + esc(S.certName) + '"></label>' +
       '<div class="certificate" id="certificate">' +
         '<div class="cert-in"><span class="brand-mark">' + icon('leaf') + '</span>' +
         '<small>LearnHub</small><h2>' + T('ui.exam.certHeading') + '</h2>' +
-        '<p>' + T('ui.exam.certPresented') + '</p><p class="cert-name" id="cert-name-out">' + esc(S.exam.name || '—') + '</p>' +
-        '<p>' + T('ui.exam.certBody') + '</p><p class="muted small">' + esc(S.exam.date) + '</p></div></div>' +
+        '<p>' + T('ui.exam.certPresented') + '</p><p class="cert-name" id="cert-name-out">' + esc(S.certName || '—') + '</p>' +
+        '<p>' + T('ui.exam.certBody', { course: t('topics.' + tid + '.title') }) + '</p><p class="muted small">' + esc(es.date) + '</p></div></div>' +
       '<div class="row-center"><button class="btn btn-primary" type="button" id="cert-print">' + icon('print') + ' ' + T('ui.exam.certPrint') + '</button></div></div>';
   }
   function bindCert(main) {
     var inp = $('#cert-name', main);
     if (!inp || inp.dataset.bound) return;
     inp.dataset.bound = 1;
-    inp.addEventListener('input', function () { S.exam.name = inp.value; $('#cert-name-out', main).textContent = inp.value || '—'; save(); });
+    inp.addEventListener('input', function () { S.certName = inp.value; $('#cert-name-out', main).textContent = inp.value || '—'; save(); });
     $('#cert-print', main).addEventListener('click', function () { printOnly('print-cert'); });
   }
   function printOnly(cls) {
@@ -1447,6 +1546,244 @@
       setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
     });
     progress();
+  }
+
+  /* ================= View: Cancer Lab =================
+   * Turn-based model of a tumour made of 4 sub-populations (clones). Each week the learner
+   * picks one action; cells grow, treatments kill some clones and not others, and
+   * resistant clones take over when the same drug is used alone. Numbers are in billions
+   * of cells (1 ≈ a 1 cm tumour). Educational, not a medical model. */
+
+  var CLONES = [
+    { id: 'sens', color: '#c8643b', chemo: 0.75, target: true, antigen: true, grow: 1.15, start: 10 },
+    { id: 'chemoR', color: '#7a4fa0', chemo: 0.08, target: true, antigen: true, grow: 1.13, start: 1e-3 },
+    { id: 'targetR', color: '#d2a021', chemo: 0.7, target: false, antigen: true, grow: 1.13, start: 1e-3 },
+    { id: 'hidden', color: '#1f6f8b', chemo: 0.7, target: true, antigen: false, grow: 1.13, start: 1e-4 }
+  ];
+  var LAB = { weeks: 40, cure: 1e-6, fatal: 200, spread: 40, detect: 1 };
+  var ACTIONS = [
+    { id: 'wait', icon: 'clock' },
+    { id: 'surgery', icon: 'hand', once: true, harm: 20 },
+    { id: 'radiation', icon: 'sun', harm: 10 },
+    { id: 'chemo', icon: 'flask', harm: 15 },
+    { id: 'targeted', icon: 'target', harm: 4 },
+    { id: 'immuno', icon: 'shield', harm: 5 },
+    { id: 'cart', icon: 'cell', once: true, harm: 30 }
+  ];
+
+  function cellWord(n) {
+    if (n < LAB.cure) return t('ui.labs.cancer.undetectable');
+    if (n >= 1) return t('ui.labs.cancer.billion', { n: fmt(n, n < 10 ? 1 : 0) });
+    if (n >= 1e-3) return t('ui.labs.cancer.million', { n: fmt(n * 1e3, n < 1e-2 ? 1 : 0) });
+    return t('ui.labs.cancer.thousand', { n: fmt(Math.max(1, n * 1e6), 0) });
+  }
+
+  function viewCancerLab(main) {
+    var L = 'ui.labs.cancer.';
+    var st;
+
+    main.innerHTML =
+      '<section class="wrap page-head">' +
+        '<a class="back" href="#/topic/cancer">' + icon('arrowLeft') + ' ' + T('topics.cancer.title') + '</a>' +
+        '<div class="page-title" style="--accent:#b04a6a"><span class="topic-ic">' + icon('cell') + '</span>' +
+          '<div><h1>' + T(L + 'title') + '</h1><p class="muted">' + T(L + 'intro') + '</p></div></div>' +
+        '<p class="note">' + icon('heart') + ' ' + T('ui.health.disclaimer') + '</p>' +
+      '</section>' +
+      '<section class="wrap lab-grid">' +
+        '<div class="card lab-panel">' +
+          '<div class="lab-stats">' +
+            '<div><small>' + T(L + 'week') + '</small><strong id="lab-week"></strong></div>' +
+            '<div><small>' + T(L + 'burden') + '</small><strong id="lab-burden"></strong></div>' +
+            '<div><small>' + T(L + 'spread') + '</small><strong id="lab-spread"></strong></div>' +
+          '</div>' +
+          '<div class="lab-health"><small>' + T(L + 'health') + '</small><div class="bar"><span id="lab-hbar"></span></div><strong id="lab-hval"></strong></div>' +
+          '<div class="lab-field" id="lab-field" aria-hidden="true"></div>' +
+          '<ul class="lab-legend">' + CLONES.map(function (c) {
+            return '<li><span style="background:' + c.color + '"></span>' + T(L + 'clones.' + c.id) + ' <em data-share="' + c.id + '"></em></li>';
+          }).join('') + '</ul>' +
+        '</div>' +
+        '<div class="card lab-panel">' +
+          '<h2 class="block-title">' + icon('hand') + ' ' + T(L + 'choose') + '</h2>' +
+          '<div class="lab-actions">' + ACTIONS.map(function (a) {
+            return '<button class="lab-act" type="button" data-act="' + a.id + '">' + icon(a.icon) +
+              '<span><strong>' + T(L + 'actions.' + a.id + '.name') + '</strong><small>' + T(L + 'actions.' + a.id + '.desc') + '</small></span>' +
+              (a.harm ? '<em class="harm">−' + a.harm + '</em>' : '') + '</button>';
+          }).join('') + '</div>' +
+          '<div class="lab-log" id="lab-log" aria-live="polite"></div>' +
+        '</div>' +
+      '</section>' +
+      '<section class="wrap"><div class="card"><h2 class="block-title">' + icon('gauge') + ' ' + T(L + 'chart') + '</h2>' +
+        '<div id="lab-chart" class="lab-chart"></div><p class="muted small">' + T(L + 'chartNote') + '</p></div>' +
+        '<div id="lab-result"></div>' +
+        '<div class="card lab-tips"><h2 class="block-title">' + icon('leaf') + ' ' + T(L + 'tipsTitle') + '</h2>' +
+          rich(t(L + 'tips').map(function (x) { return '- ' + x; })) + '</div>' +
+      '</section>';
+
+    function reset() {
+      st = {
+        week: 0, health: 100, spread: false, over: false, used: {}, immuno: 0, cart: 0,
+        n: CLONES.map(function (c) { return c.start; }),
+        hist: []
+      };
+      st.hist.push(st.n.slice());
+      $('#lab-log', main).innerHTML = '<p>' + T(L + 'start') + '</p>';
+      $('#lab-result', main).innerHTML = '';
+      render();
+    }
+    function total() { return st.n.reduce(function (a, b) { return a + b; }, 0); }
+    function log(msg, kind) {
+      var box = $('#lab-log', main);
+      box.insertAdjacentHTML('afterbegin', '<p class="' + (kind || '') + '"><strong>' + T(L + 'weekN', { n: st.week }) + '</strong> ' + esc(msg) + '</p>');
+    }
+
+    function act(id) {
+      if (st.over) return;
+      var a = ACTIONS.filter(function (x) { return x.id === id; })[0];
+      if (a.once && st.used[id]) { log(t(L + 'onceOnly'), 'bad'); return; }
+      if (a.harm && st.health - a.harm <= 0) { log(t(L + 'tooWeak'), 'bad'); return; }
+      st.week++;
+      var before = total(), msg;
+      var kill = function (fn) { st.n = st.n.map(function (v, i) { return v * (1 - fn(CLONES[i])); }); };
+
+      if (id === 'surgery') {
+        kill(function () { return st.spread ? 0.6 : 0.999; });
+        msg = t(L + (st.spread ? 'msg.surgerySpread' : 'msg.surgery'));
+      } else if (id === 'radiation') {
+        kill(function () { return st.spread ? 0.45 : 0.85; });
+        msg = t(L + (st.spread ? 'msg.radiationSpread' : 'msg.radiation'));
+      } else if (id === 'chemo') {
+        kill(function (c) { return c.chemo; });
+        msg = t(L + 'msg.chemo');
+      } else if (id === 'targeted') {
+        kill(function (c) { return c.target ? 0.95 : 0; });
+        msg = t(L + 'msg.targeted');
+      } else if (id === 'immuno') {
+        st.immuno = 3;
+        msg = t(L + 'msg.immuno');
+      } else if (id === 'cart') {
+        kill(function (c) { return c.antigen ? 0.999 : 0; });
+        st.cart = 2;
+        msg = t(L + 'msg.cart');
+      } else {
+        msg = t(L + 'msg.wait');
+      }
+      if (a.once) st.used[id] = true;
+
+      // lingering effects of immune therapies
+      if (st.immuno > 0) { kill(function () { return 0.4; }); st.immuno--; }
+      if (st.cart > 0 && id !== 'cart') { kill(function (c) { return c.antigen ? 0.9 : 0; }); st.cart--; }
+
+      // one week of growth
+      st.n = st.n.map(function (v, i) { return v * CLONES[i].grow; });
+      st.health = Math.max(0, Math.min(100, st.health - (a.harm || 0) + 5));
+      if (!st.spread && total() > LAB.spread) { st.spread = true; log(t(L + 'msg.spreadNow'), 'bad'); }
+
+      var after = total();
+      log(msg + ' ' + t(after < before ? L + 'msg.shrank' : L + 'msg.grew', { from: cellWord(before), to: cellWord(after) }));
+      var resist = resistantShare();
+      if (resist > 0.5 && after > 1e-3) log(t(L + 'msg.resistance', { pct: Math.round(resist * 100) }), 'bad');
+
+      st.hist.push(st.n.slice());
+      S.lab.runs++; save();
+      check();
+      render();
+    }
+
+    function resistantShare() {
+      var tt = total();
+      return tt ? (tt - st.n[0]) / tt : 0;
+    }
+
+    function check() {
+      var tt = total(), res = null;
+      if (tt < LAB.cure) res = 'win';
+      else if (tt >= LAB.fatal) res = 'spread';
+      else if (st.week >= LAB.weeks) res = 'time';
+      if (!res) return;
+      st.over = true;
+      if (res === 'win' && !S.lab.remission) { S.lab.remission = true; addXP(LH.XP.activity * 3); save(); checkBadges(); }
+      $('#lab-result', main).innerHTML = '<div class="card lab-result lab-' + res + '">' +
+        '<div class="celebrate-ic">' + icon(res === 'win' ? 'trophy' : 'alert') + '</div>' +
+        '<h2>' + T(L + 'result.' + res + '.title') + '</h2><p>' + T(L + 'result.' + res + '.body', { weeks: st.week }) + '</p>' +
+        '<button class="btn btn-primary" type="button" id="lab-again">' + icon('reset') + ' ' + T(L + 'again') + '</button></div>';
+      $('#lab-again', main).addEventListener('click', reset);
+      $('#lab-result', main).scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function render() {
+      var tt = total();
+      $('#lab-week', main).textContent = st.week + ' / ' + LAB.weeks;
+      $('#lab-burden', main).textContent = cellWord(tt);
+      $('#lab-spread', main).textContent = t(L + (st.spread ? 'spreadYes' : 'spreadNo'));
+      $('#lab-spread', main).className = st.spread ? 'bad' : '';
+      $('#lab-hbar', main).style.width = st.health + '%';
+      $('#lab-hbar', main).className = st.health < 35 ? 'low' : '';
+      $('#lab-hval', main).textContent = st.health + ' / 100';
+      CLONES.forEach(function (c, i) {
+        $('[data-share="' + c.id + '"]', main).textContent = tt ? Math.round(st.n[i] / tt * 100) + '%' : '0%';
+      });
+      $$('.lab-act', main).forEach(function (b) {
+        var a = ACTIONS.filter(function (x) { return x.id === b.getAttribute('data-act'); })[0];
+        b.disabled = st.over || (a.once && st.used[a.id]);
+      });
+      drawField(tt);
+      drawChart();
+    }
+
+    /* tissue view: healthy cells (green) and cancer cells coloured by clone; dot count ~ log(size) */
+    function drawField(tt) {
+      var W = 320, H = 190, max = 150;
+      var k = tt < LAB.cure ? 0 : Math.max(1, Math.round(Math.log10(tt / LAB.cure) / Math.log10(LAB.fatal / LAB.cure) * max));
+      var dots = [], rng = mulberry(7);
+      var shares = st.n.map(function (v) { return tt ? v / tt : 0; });
+      var counts = shares.map(function (s) { return s > 0.005 ? Math.max(1, Math.round(s * k)) : 0; });
+      var healthy = '';
+      for (var h = 0; h < 90; h++) {
+        healthy += '<circle cx="' + (rng() * W).toFixed(1) + '" cy="' + (rng() * H).toFixed(1) + '" r="5" fill="#9ccb72" opacity="' + (0.25 + st.health / 250).toFixed(2) + '"/>';
+      }
+      var rng2 = mulberry(3);
+      counts.forEach(function (c, i) {
+        for (var j = 0; j < c; j++) {
+          // cancer cells cluster around the tumour centre; once spread, some appear far away
+          var far = st.spread && rng2() < 0.25;
+          var ang = rng2() * Math.PI * 2, rad = (far ? 60 + rng2() * 90 : Math.sqrt(rng2()) * (18 + k * 0.5));
+          var cx = (far ? W * (rng2() < 0.5 ? 0.15 : 0.85) : W / 2) + Math.cos(ang) * rad * (far ? 0.3 : 1);
+          var cy = H / 2 + Math.sin(ang) * rad * (far ? 0.3 : 0.7);
+          dots.push('<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="4.2" fill="' + CLONES[i].color + '" stroke="#fff" stroke-width=".8"/>');
+        }
+      });
+      $('#lab-field', main).innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '"><rect width="' + W + '" height="' + H + '" rx="14" fill="#fbeef0"/>' + healthy + dots.join('') + '</svg>';
+    }
+
+    /* log-scale chart of each clone over time */
+    function drawChart() {
+      var W = 640, H = 240, pl = 44, pr = 10, pt = 10, pb = 26;
+      var ymin = -7, ymax = Math.log10(LAB.fatal * 3);
+      function x(w) { return pl + (w / LAB.weeks) * (W - pl - pr); }
+      function y(v) { var lv = Math.max(ymin, Math.log10(Math.max(v, 1e-9))); return pt + (1 - (lv - ymin) / (ymax - ymin)) * (H - pt - pb); }
+      var grid = '';
+      [[LAB.fatal, 'fatal', '#c8643b'], [LAB.detect, 'detect', '#8a8574'], [LAB.cure, 'cure', '#5f8a3e']].forEach(function (g) {
+        grid += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y(g[0]) + '" y2="' + y(g[0]) + '" stroke="' + g[2] + '" stroke-dasharray="4 4"/>' +
+          '<text x="' + (pl + 4) + '" y="' + (y(g[0]) - 4) + '" fill="' + g[2] + '" font-size="11" font-weight="700">' + T(L + 'line.' + g[1]) + '</text>';
+      });
+      for (var w = 0; w <= LAB.weeks; w += 10) grid += '<text x="' + x(w) + '" y="' + (H - 8) + '" font-size="11" text-anchor="middle" fill="#5e6e5f">' + w + '</text>';
+      var lines = CLONES.map(function (c, i) {
+        var pts = st.hist.map(function (n, wk) { return x(wk).toFixed(1) + ',' + y(n[i]).toFixed(1); }).join(' ');
+        return '<polyline points="' + pts + '" fill="none" stroke="' + c.color + '" stroke-width="2.5" stroke-linejoin="round"/>';
+      }).join('');
+      var totPts = st.hist.map(function (n, wk) { return x(wk).toFixed(1) + ',' + y(n.reduce(function (a, b) { return a + b; }, 0)).toFixed(1); }).join(' ');
+      $('#lab-chart', main).innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + T(L + 'chart') + '">' +
+        '<rect x="' + pl + '" y="' + pt + '" width="' + (W - pl - pr) + '" height="' + (H - pt - pb) + '" fill="#fffdf7" stroke="#e4dcc6"/>' + grid + lines +
+        '<polyline points="' + totPts + '" fill="none" stroke="#233326" stroke-width="1.5" stroke-dasharray="2 3"/>' +
+        '<text x="' + (W - pr) + '" y="' + (H - 8) + '" font-size="11" text-anchor="end" fill="#5e6e5f">' + T(L + 'weeks') + '</text></svg>';
+    }
+
+    function mulberry(a) {
+      return function () { a |= 0; a = a + 0x6D2B79F5 | 0; var r = Math.imul(a ^ a >>> 15, 1 | a); r = r + Math.imul(r ^ r >>> 7, 61 | r) ^ r; return ((r ^ r >>> 14) >>> 0) / 4294967296; };
+    }
+
+    $$('.lab-act', main).forEach(function (b) { b.addEventListener('click', function () { act(b.getAttribute('data-act')); }); });
+    reset();
   }
 
   /* ================= View: Simulator ================= */
@@ -1666,5 +2003,5 @@
 
   /* ================= Boot ================= */
 
-  setLang(S.lang || detectLang(), false);
+  setLang(S.lang || detectLang(), false).then(checkBadges);
 })();

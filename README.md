@@ -1,23 +1,40 @@
 # 🌿 LearnHub
 
-A free, static, interactive web course on **Disaster Risk Reduction (DRR)**. Learners follow four
-modules along a winding learning trail, explore virtual tours and interactive maps, practise with
-quizzes and activities, write reflections, take a final exam, and build their own household DRR plan.
-It works in **English, Khmer (ខ្មែរ), Chinese (中文) and Japanese (日本語)**.
+A free, static, interactive learning site with courses in two categories:
+
+- **Emergency preparedness** — *Tsunami & Disaster Risk Reduction* (4 modules)
+- **Health** — *Cancer* (3 modules)
+
+Learners follow each course along a winding learning trail, practise with quizzes and hands-on
+activities, experiment in interactive **labs**, write reflections and take a final **exam** with a
+printable certificate. It works in **English, Khmer (ខ្មែរ), Chinese (中文) and Japanese (日本語)**.
 
 No build step, no server, no database, no API keys. It is pure HTML, CSS and JavaScript,
 so it can be hosted for free on GitHub Pages with no usage limits.
 
-## Course
+## Emergency: Tsunami & Disaster Risk Reduction
 
 | Module | Lessons |
 |---|---|
 | **1. Understanding Disaster Risk Reduction** | SDGs and the Sendai Framework · 2011 Great East Japan Earthquake and Tsunami · Goryo Hamaguchi and World Tsunami Awareness Day · Introduction to DRR · The DRR Cycle · DRR Planning · Reflection |
 | **2. Learning from Japan's Experience** | The Miracle of Kamaishi · Arahama Elementary School overview · Virtual tour: Arahama (parts 1–2) · Virtual tour: Okawa (parts 1–2) · Reflection |
 | **3. Learning from Disasters Across the Asia-Pacific** | 2004 Indian Ocean Tsunami · Samoa–Tonga Tsunami · 2018 Sunda Strait Tsunami · Early Warning Systems · A Changing Climate and DRR · The Role of Youth in DRR · Youth-Led Actions: Mapanas, Philippines · Reflection |
-| **4. Preparing for Future Disasters** | Leave No One Behind: elderly people · Leave No One Behind: persons with disabilities · Community-Based DRR · Building Back Better · Emergency Box · Prepare Your Own Go-Bag · Reflection |
+| **4. Preparing for Future Disasters** | Leave No One Behind: elderly people · Leave No One Behind: persons with disabilities · Community-Based DRR · Building Back Better · Emergency Box · Prepare Your Own Go-Bag (with a packing game) · Reflection |
+| **Lab** | Tsunami Wave Simulator |
 | **Final exam** | 20 questions drawn from a pool of 32; 70% to pass; printable certificate |
 | **DRR Plan** | 8-section household plan builder; print or save as text |
+
+## Health: Cancer
+
+| Module | Lessons |
+|---|---|
+| **1. Understanding cancer** | What is cancer? · Types of cancer · Stages of cancer · How cancer spreads · Reflection |
+| **2. Why cancer is hard to cure** | Our own cells gone rogue · Evolution and resistance · Hiding and late detection · Reflection |
+| **3. Treatments and solutions** | Surgery and radiation · Chemotherapy vs cancer · Targeted therapy and immunotherapy · CAR T cells · Other solutions and the future · Prevention and early detection · Reflection |
+| **Lab** | Cancer Treatment Lab — a turn-based tumour simulation with surgery, radiation, chemotherapy, targeted therapy, immunotherapy and CAR T cells; shows how resistant cells take over when one treatment is used alone |
+| **Final exam** | 20 questions drawn from a pool of 34; 70% to pass; printable certificate |
+
+The Cancer topic is general education, not medical advice; the app says so on the topic page and in the lab.
 
 ### Content types used in lessons
 
@@ -25,13 +42,14 @@ Text, key statistics, timelines, flip cards, comparison tables, an interactive D
 a risk-equation calculator, illustrated **virtual tours** with hotspots, an interactive
 **Asia-Pacific map**, sorting activities, ordering activities, "what would you do?" scenarios,
 quizzes with instant feedback, private reflection journals, the go-bag checklist,
-the tsunami physics simulator and links to official sources.
+links to the labs, and links to official sources.
 
 ### Other features
 
 - **Tsunami simulator** — shallow-water wave equation `v = √(g·d)`, arrival time, shoaling height estimate, animated ocean cross-section
 - **Survival Forum** — searchable Q&A knowledge base and go-bag checklist
-- **Gamification** — XP, levels (Seed → Sprout → Sapling → Tree → Forest), 14 badges
+- **Cancer Treatment Lab** — 4 groups of cancer cells (sensitive, chemo-resistant, no drug target, hidden from CAR T), patient health, spread, and a log-scale chart of tumour size
+- **Gamification** — XP, levels (Seed → Sprout → Sapling → Tree → Forest), 19 badges
 - Progress, reflections and the plan are saved **only in the learner's browser** (`localStorage`)
 
 ## Project structure
@@ -43,12 +61,13 @@ assets/
   css/style.css            Nature theme and core layout
   css/course.css           Course blocks, exam, certificate, plan, print styles
   js/icons.js              Hand-drawn nature SVG icon set
-  js/data.js               Structure: languages, modules, badges, levels, plan options, map pins
+  js/data.js               Structure: languages, categories, topics, modules, badges, levels, plan options, map pins
   js/scenes.js             Illustrated scenes for the virtual tours
   js/sim.js                Tsunami physics + animated simulator
-  js/app.js                Router, state, i18n, lesson block renderers, all views
+  js/app.js                Router, state, i18n, lesson block renderers, all views (incl. the Cancer Lab)
   js/i18n/<lang>.js        Interface text, forum, checklist, badges
-  js/content/<lang>.js     Lesson content and exam questions (en.js is the source of truth)
+  js/content/<lang>.js     DRR lessons and exam questions (en.js is the source of truth)
+  js/content/cancer-<lang>.js  Cancer lessons and exam questions (cancer-en.js is the source of truth)
 tools/translate.mjs        Machine-translate missing text for a new language
 tools/check-i18n.mjs       Check every language covers every English string
 .nojekyll                  Tells GitHub Pages to serve files as-is
@@ -85,13 +104,25 @@ Lessons are data, not code. Each lesson in `assets/js/content/en.js` is a list o
 ```
 
 Block types: `text`, `fact`, `quote`, `stats`, `timeline`, `cards`, `compare`, `cycle`, `risk`,
-`tour`, `map`, `sort`, `order`, `scenario`, `quiz`, `reflect`, `links`, `sim`, `kit`, `planlink`.
+`tour`, `map`, `sort`, `order`, `scenario`, `quiz`, `reflect`, `links`, `sim`, `lab`, `kit`,
+`gobag`, `planlink`.
 Structure (block types, answers, icons, links) always comes from the English file; other languages
 only provide the text, in the same order. After editing, run:
 
 ```bash
 node tools/check-i18n.mjs
 ```
+
+### Add a new topic
+
+1. In `assets/js/data.js`, give the topic in `LH.TOPICS` `available: true`, a `lab` and an `exam` key,
+   and add its modules to `LH.MODULES` (with `topic: '<id>'`) and icons to `LH.LESSON_ICONS`.
+2. Create `assets/js/content/<topic>-<lang>.js` with `lessons` and the exam pool, and load it in
+   `index.html` (English) and in `loadLang()` in `app.js` (other languages).
+3. Add `topics.<id>` and `modules.<id>` text to each `assets/js/i18n/<lang>.js`.
+
+After changing any CSS or JS file, bump the `?v=` number in `index.html` and `ASSET_V` in `app.js`
+so returning visitors get the new files.
 
 ## Languages & translation
 
