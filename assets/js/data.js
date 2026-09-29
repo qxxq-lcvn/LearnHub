@@ -98,6 +98,44 @@ LH.FORUM = [
   { id: 't11', cat: 'myths' }
 ];
 
+/*
+ * Go-bag packing game (Go Bag lesson). Limits for one adult, 2 days.
+ * tier: 'e' essential (+10), 'u' useful (+4), 'x' poor choice (-6).
+ * Item names and explanations live in the lesson content, in the same order.
+ */
+LH.GOBAG = {
+  slots: 12, kg: 5, seconds: 90,
+  points: { e: 10, u: 4, x: -6 },
+  items: [
+    { id: 'water', e: '💧', s: 2, kg: 1.2, t: 'e' },
+    { id: 'food', e: '🍫', s: 1, kg: 0.4, t: 'e' },
+    { id: 'meds', e: '💊', s: 1, kg: 0.2, t: 'e' },
+    { id: 'id', e: '📄', s: 1, kg: 0.1, t: 'e' },
+    { id: 'torch', e: '🔦', s: 1, kg: 0.3, t: 'e' },
+    { id: 'firstaid', e: '⛑️', s: 1, kg: 0.4, t: 'e' },
+    { id: 'radio', e: '📻', s: 1, kg: 0.3, t: 'e' },
+    { id: 'raincoat', e: '🧥', s: 1, kg: 0.3, t: 'e' },
+    { id: 'powerbank', e: '🔋', s: 1, kg: 0.3, t: 'u' },
+    { id: 'cash', e: '💵', s: 1, kg: 0.05, t: 'u' },
+    { id: 'mask', e: '😷', s: 1, kg: 0.05, t: 'u' },
+    { id: 'multitool', e: '🔪', s: 1, kg: 0.2, t: 'u' },
+    { id: 'sandals', e: '🩴', s: 1, kg: 0.3, t: 'u' },
+    { id: 'wrap', e: '🎞️', s: 1, kg: 0.2, t: 'u' },
+    { id: 'polybag', e: '🛍️', s: 1, kg: 0.1, t: 'u' },
+    { id: 'blanket', e: '✨', s: 1, kg: 0.15, t: 'u' },
+    { id: 'waterbag', e: '🪣', s: 1, kg: 0.1, t: 'u' },
+    { id: 'sanitary', e: '🩸', s: 1, kg: 0.2, t: 'u' },
+    { id: 'sewing', e: '🪡', s: 1, kg: 0.1, t: 'u' },
+    { id: 'toilet', e: '🚽', s: 2, kg: 0.6, t: 'u' },
+    { id: 'tissue', e: '🧻', s: 1, kg: 0.1, t: 'u' },
+    { id: 'book', e: '📚', s: 2, kg: 1.2, t: 'x' },
+    { id: 'umbrella', e: '☂️', s: 2, kg: 0.5, t: 'x' },
+    { id: 'laptop', e: '💻', s: 3, kg: 1.8, t: 'x' },
+    { id: 'perfume', e: '🧴', s: 1, kg: 0.2, t: 'x' },
+    { id: 'charger', e: '🔌', s: 1, kg: 0.1, t: 'x' }
+  ]
+};
+
 LH.KIT = ['k1', 'k2', 'k3', 'k4', 'k5', 'k6', 'k7', 'k8', 'k9', 'k10', 'k11', 'k12'];
 
 /* DRR Plan builder: option lists (labels in ui.plan.opts.*) */

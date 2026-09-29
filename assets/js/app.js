@@ -1006,6 +1006,151 @@
     return { html: '<h2 class="block-title">' + icon('backpack') + ' ' + T('ui.forum.kitTitle') + '</h2><div class="card kit kit-inline"></div>', bind: function (el) { renderKit($('.kit', el)); } };
   };
 
+  /* Go-bag packing game: limited slots, weight and time; scored with an explanation per item */
+  BLOCKS.gobag = function (P, E, key) {
+    var G = LH.GOBAG, items = G.items;
+    // best possible score: every essential, plus useful 1-slot items in the slots that remain
+    var essentials = items.filter(function (it) { return it.t === 'e'; });
+    var essSlots = essentials.reduce(function (a, it) { return a + it.s; }, 0);
+    var MAX = essentials.length * G.points.e + Math.max(0, G.slots - essSlots) * G.points.u;
+    function kg(n) { return fmt(n, n % 1 ? (Math.round(n * 100) % 10 ? 2 : 1) : 0); }
+    function name(i) { return P('items.' + i + '.name'); }
+
+    return {
+      required: true,
+      html:
+        '<div class="gobag">' +
+          '<div class="gb-head">' +
+            '<small class="eyebrow-sm">' + esc(P('eyebrow')) + '</small>' +
+            '<h2>' + esc(P('scenario')) + '</h2><p>' + inline(P('intro')) + '</p>' +
+            '<div class="chips gb-rules">' +
+              '<span class="chip">' + icon('backpack') + ' ' + T('ui.blocks.gobag.slots', { n: G.slots }) + '</span>' +
+              '<span class="chip">' + icon('height') + ' ' + T('ui.blocks.gobag.maxKg', { n: G.kg }) + '</span>' +
+              '<span class="chip">' + icon('clock') + ' ' + T('ui.blocks.gobag.seconds', { n: G.seconds }) + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="gb-grid">' +
+            '<div class="gb-bag">' +
+              '<div class="gb-bag-head"><h3>' + T('ui.blocks.gobag.yourBag') + '</h3><span class="gb-status"></span></div>' +
+              '<div class="gb-meter"><span class="gb-m-slots"></span></div>' +
+              '<div class="gb-meter gb-meter-kg"><span class="gb-m-kg"></span></div>' +
+              '<div class="gb-packed"></div>' +
+              '<button class="btn btn-primary btn-block gb-finish" type="button" disabled>' + icon('mountain') + ' ' + T('ui.blocks.gobag.finish') + '</button>' +
+            '</div>' +
+            '<div class="gb-shelf">' +
+              '<div class="gb-bag-head"><h3>' + T('ui.blocks.gobag.available') + '</h3><span class="gb-time">' + icon('clock') + ' <strong></strong></span></div>' +
+              '<div class="gb-items">' + items.map(function (it, i) {
+                return '<button class="gb-item" type="button" data-i="' + i + '" aria-pressed="false">' +
+                  '<span class="gb-emoji" aria-hidden="true">' + it.e + '</span>' +
+                  '<span class="gb-name">' + esc(name(i)) + '</span>' +
+                  '<span class="gb-meta">' + T('ui.blocks.gobag.itemMeta', { s: it.s, kg: kg(it.kg) }) + '</span></button>';
+              }).join('') + '</div>' +
+              '<div class="gb-cover"><p>' + T('ui.blocks.gobag.ready') + '</p><button class="btn btn-sea btn-lg gb-start" type="button">' + icon('play') + ' ' + T('ui.blocks.gobag.start') + '</button></div>' +
+            '</div>' +
+          '</div>' +
+          '<p class="gb-msg" aria-live="polite"></p>' +
+          '<div class="gb-result" aria-live="polite"></div>' +
+        '</div>',
+
+      bind: function (el, done) {
+        var packed = [], left = G.seconds, timer = null, state = 'idle';
+        var msg = $('.gb-msg', el);
+
+        function totals() {
+          return packed.reduce(function (a, i) { a.s += items[i].s; a.kg += items[i].kg; return a; }, { s: 0, kg: 0 });
+        }
+        function renderBag() {
+          var tt = totals();
+          $('.gb-status', el).textContent = t('ui.blocks.gobag.status', { s: tt.s, smax: G.slots, kg: kg(Math.round(tt.kg * 100) / 100), kgmax: G.kg });
+          $('.gb-m-slots', el).style.width = (tt.s / G.slots * 100) + '%';
+          var k = $('.gb-m-kg', el);
+          k.style.width = Math.min(100, tt.kg / G.kg * 100) + '%';
+          k.classList.toggle('warn', tt.kg / G.kg > 0.85);
+          $('.gb-packed', el).innerHTML = packed.length ? packed.map(function (i) {
+            return '<button class="gb-chip" type="button" data-i="' + i + '" title="' + T('ui.blocks.gobag.remove') + '">' +
+              '<span aria-hidden="true">' + items[i].e + '</span> ' + esc(name(i)) + ' ' + icon('close') + '</button>';
+          }).join('') : '<p class="gb-empty">' + T('ui.blocks.gobag.empty') + '</p>';
+          $$('.gb-chip', el).forEach(function (b) { b.addEventListener('click', function () { toggle(+b.getAttribute('data-i')); }); });
+          $$('.gb-item', el).forEach(function (b) {
+            var on = packed.indexOf(+b.getAttribute('data-i')) !== -1;
+            b.classList.toggle('in', on); b.setAttribute('aria-pressed', on);
+          });
+          $('.gb-finish', el).disabled = state !== 'play' || !packed.length;
+        }
+        function say(text, bad) { msg.textContent = text; msg.classList.toggle('bad', !!bad); }
+        function toggle(i) {
+          if (state !== 'play') return;
+          var at = packed.indexOf(i);
+          if (at !== -1) { packed.splice(at, 1); say(''); renderBag(); return; }
+          var tt = totals(), it = items[i];
+          var b = $('.gb-item[data-i="' + i + '"]', el);
+          if (tt.s + it.s > G.slots) { say(t('ui.blocks.gobag.noSlots'), true); b.classList.add('shake'); setTimeout(function () { b.classList.remove('shake'); }, 400); return; }
+          if (tt.kg + it.kg > G.kg + 1e-9) { say(t('ui.blocks.gobag.tooHeavy'), true); b.classList.add('shake'); setTimeout(function () { b.classList.remove('shake'); }, 400); return; }
+          packed.push(i); say(''); renderBag();
+        }
+        function tick() {
+          if (!document.body.contains(el)) { clearInterval(timer); return; }
+          left--;
+          showTime();
+          if (left <= 0) finish(true);
+        }
+        function showTime() {
+          var s = $('.gb-time strong', el);
+          s.textContent = Math.floor(left / 60) + ':' + ('0' + (left % 60)).slice(-2);
+          $('.gb-time', el).classList.toggle('low', left <= 15 && state === 'play');
+        }
+        function start() {
+          packed = []; left = G.seconds; state = 'play';
+          el.querySelector('.gobag').classList.add('playing');
+          el.querySelector('.gobag').classList.remove('over');
+          $('.gb-result', el).innerHTML = ''; say('');
+          showTime(); renderBag();
+          clearInterval(timer); timer = setInterval(tick, 1000);
+        }
+        function finish(timeUp) {
+          if (state !== 'play') return;
+          state = 'over'; clearInterval(timer);
+          el.querySelector('.gobag').classList.remove('playing');
+          el.querySelector('.gobag').classList.add('over');
+          renderBag();
+
+          var pts = packed.reduce(function (a, i) { return a + G.points[items[i].t]; }, 0);
+          var pct = Math.max(0, Math.min(100, Math.round(pts / MAX * 100)));
+          var stars = pct >= 85 ? 3 : pct >= 60 ? 2 : 1;
+          var ess = items.map(function (it, i) { return i; }).filter(function (i) { return items[i].t === 'e'; });
+          var missing = ess.filter(function (i) { return packed.indexOf(i) === -1; });
+          var poor = packed.filter(function (i) { return items[i].t === 'x'; });
+          var extras = packed.filter(function (i) { return items[i].t === 'u'; });
+          function list(ids, cls) {
+            return '<ul class="gb-list ' + cls + '">' + ids.map(function (i) {
+              return '<li><span aria-hidden="true">' + items[i].e + '</span><div><strong>' + esc(name(i)) + '</strong><p>' + esc(P('items.' + i + '.why')) + '</p></div></li>';
+            }).join('') + '</ul>';
+          }
+          var level = stars === 3 ? 'great' : stars === 2 ? 'good' : 'poor';
+          $('.gb-result', el).innerHTML =
+            '<div class="card gb-card gb-' + level + '">' +
+              (timeUp ? '<p class="note">' + icon('clock') + ' ' + T('ui.blocks.gobag.timeUp') + '</p>' : '') +
+              '<div class="gb-score"><div class="gb-stars" aria-label="' + stars + '/3">' + [1, 2, 3].map(function (n) { return '<span class="' + (n <= stars ? 'on' : '') + '">' + icon('star') + '</span>'; }).join('') + '</div>' +
+                '<div><h3>' + T('ui.blocks.gobag.' + level) + '</h3><p>' + T('ui.blocks.gobag.score', { pct: pct }) + ' · ' + T('ui.blocks.gobag.essentials', { n: ess.length - missing.length, total: ess.length }) + '</p></div></div>' +
+              (missing.length ? '<h4>' + icon('alert') + ' ' + T('ui.blocks.gobag.missing') + '</h4>' + list(missing, 'miss') : '') +
+              (poor.length ? '<h4>' + icon('close') + ' ' + T('ui.blocks.gobag.poorChoices') + '</h4>' + list(poor, 'bad') : '') +
+              (extras.length ? '<h4>' + icon('check') + ' ' + T('ui.blocks.gobag.extras') + '</h4>' + list(extras, 'ok') : '') +
+              '<div class="row-center"><button class="btn btn-ghost gb-retry" type="button">' + icon('reset') + ' ' + T('ui.blocks.gobag.retry') + '</button></div>' +
+            '</div>';
+          $('.gb-retry', el).addEventListener('click', start);
+          if (stars === 3 && !S.acts[key]) { addXP(LH.XP.activity); toast(icon('sprout') + ' +' + LH.XP.activity + ' XP'); }
+          markActivity(key); done();
+          $('.gb-result', el).scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        $$('.gb-item', el).forEach(function (b) { b.addEventListener('click', function () { toggle(+b.getAttribute('data-i')); }); });
+        $('.gb-start', el).addEventListener('click', start);
+        $('.gb-finish', el).addEventListener('click', function () { finish(false); });
+        showTime(); renderBag();
+      }
+    };
+  };
+
   BLOCKS.planlink = function () {
     return { html: '<a class="tryit tryit-moss" href="#/plan">' + icon('map') + '<div><strong>' + T('ui.plan.title') + '</strong><p>' + T('ui.plan.desc') + '</p></div>' + icon('arrowRight', 'go') + '</a>' };
   };
